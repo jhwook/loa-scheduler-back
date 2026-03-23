@@ -10,6 +10,16 @@ export class CharactersService {
     private readonly charactersRepository: Repository<Character>,
   ) {}
 
+  async findByUserId(userId: number) {
+    return this.charactersRepository.find({
+      where: { userId },
+      order: {
+        itemAvgLevel: 'DESC',
+        createdAt: 'ASC',
+      },
+    });
+  }
+
   async findByUserIdAndNames(userId: number, characterNames: string[]) {
     return this.charactersRepository.find({
       where: {
@@ -19,7 +29,20 @@ export class CharactersService {
     });
   }
 
+  async findOneByIdAndUserId(characterId: number, userId: number) {
+    return this.charactersRepository.findOne({
+      where: {
+        id: characterId,
+        userId,
+      },
+    });
+  }
+
   async saveCharacters(characters: Character[]) {
     return this.charactersRepository.save(characters);
+  }
+
+  async remove(character: Character) {
+    return this.charactersRepository.remove(character);
   }
 }

@@ -3,8 +3,12 @@ import {
   Controller,
   Post,
   Req,
+  Get,
   UseGuards,
   ValidationPipe,
+  Delete,
+  Param,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth-guard';
@@ -50,12 +54,24 @@ export class UsersController {
     )
     syncCharactersDto: SyncCharactersDto,
   ) {
-    console.log(
-      '???????????????????????????????????????????????????????????????????????',
-    );
     return this.usersService.syncCharacters(
       req.user.userId,
       syncCharactersDto.characterNames,
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/characters')
+  getMyCharacters(@Req() req: any) {
+    return this.usersService.getMyCharacters(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('me/characters/:characterId')
+  deleteMyCharacter(
+    @Req() req: any,
+    @Param('characterId', ParseIntPipe) characterId: number,
+  ) {
+    return this.usersService.deleteMyCharacter(req.user.userId, characterId);
   }
 }

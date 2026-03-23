@@ -22,6 +22,9 @@ export class User {
   @Column({ nullable: true, type: 'text' })
   lostarkApiToken: string | null;
 
+  @Column({ default: false })
+  hasApiToken: boolean;
+
   @Column({ nullable: true })
   mainCharacterName: string | null;
 

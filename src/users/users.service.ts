@@ -52,6 +52,7 @@ export class UsersService {
     await this.lostarkService.validateApiKey(apiKey);
 
     user.lostarkApiToken = apiKey;
+    user.hasApiToken = true;
     await this.usersRepository.save(user);
 
     return {
@@ -172,6 +173,71 @@ export class UsersService {
         combatPower: character.combatPower,
         characterImage: character.characterImage,
       })),
+    };
+  }
+
+  async getMyCharacters(userId: number) {
+    const user = await this.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('유저를 찾을 수 없습니다.');
+    }
+
+    const characters = await this.charactersService.findByUserId(userId);
+
+    const sortedCharacters = [...characters].sort((a, b) => {
+      const aLevel = Number((a.itemAvgLevel ?? '0').replace(/,/g, ''));
+      const bLevel = Number((b.itemAvgLevel ?? '0').replace(/,/g, ''));
+      return bLevel - aLevel;
+    });
+
+    return {
+      count: sortedCharacters.length,
+      characters: sortedCharacters.map((character) => ({
+        id: character.id,
+        characterName: character.characterName,
+        serverName: character.serverName,
+        characterClassName: character.characterClassName,
+        characterLevel: character.characterLevel,
+        itemAvgLevel: character.itemAvgLevel,
+        itemMaxLevel: character.itemMaxLevel,
+        expeditionLevel: character.expeditionLevel,
+        title: character.title,
+        guildName: character.guildName,
+        townName: character.townName,
+        pvpGradeName: character.pvpGradeName,
+        combatPower: character.combatPower,
+        characterImage: character.characterImage,
+        createdAt: character.createdAt,
+        updatedAt: character.updatedAt,
+      })),
+    };
+  }
+
+  async deleteMyCharacter(userId: number, characterId: number) {
+    const user = await this.findById(userId);
+
+    if (!user) {
+      throw new NotFoundException('유저를 찾을 수 없습니다.');
+    }
+
+    const character = await this.charactersService.findOneByIdAndUserId(
+      characterId,
+      userId,
+    );
+
+    if (!character) {
+      throw new NotFoundException('해당 캐릭터를 찾을 수 없습니다.');
+    }
+
+    await this.charactersService.remove(character);
+
+    return {
+      message: '캐릭터가 삭제되었습니다.',
+      deletedCharacter: {
+        id: character.id,
+        characterName: character.characterName,
+      },
     };
   }
 }
