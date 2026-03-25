@@ -1,7 +1,7 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
+import { ExtractJwt, Strategy } from 'passport-jwt';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -13,13 +13,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: number; username: string }) {
-    if (!payload?.sub) {
-      throw new UnauthorizedException('유효하지 않은 토큰 payload 입니다.');
-    }
+  async validate(payload: { sub: number; username: string; role: string }) {
     return {
       userId: payload.sub,
       username: payload.username,
+      role: payload.role,
     };
   }
 }

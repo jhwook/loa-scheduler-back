@@ -5,6 +5,8 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CharactersModule } from './characters/characters.module';
 import { LostarkModule } from './lostark/lostark.module';
+import { RaidInfoModule } from './raid-info/raid-info.module';
+import { CharacterWeeklyRaidGateModule } from './character-weekly-raid/character-weekly-raid-gate.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { LostarkModule } from './lostark/lostark.module';
     AuthModule,
     CharactersModule,
     LostarkModule,
+    RaidInfoModule,
+    CharacterWeeklyRaidGateModule,
   ],
 })
 export class AppModule {}

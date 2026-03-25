@@ -21,6 +21,12 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @UseGuards(JwtAuthGuard)
+  @Get('me')
+  getMe(@Req() req: any) {
+    return this.usersService.findById(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post('me/lostark-api-key')
   registerLostarkApiKey(
     @Req() req: any,

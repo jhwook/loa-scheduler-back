@@ -8,6 +8,8 @@ import {
 } from 'typeorm';
 import { Character } from '../../characters/entities/character.entity';
 
+export type UserRole = 'USER' | 'ADMIN';
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn()
@@ -27,6 +29,12 @@ export class User {
 
   @Column({ nullable: true })
   mainCharacterName: string | null;
+
+  @Column({
+    type: 'varchar',
+    default: 'USER',
+  })
+  role: UserRole;
 
   @OneToMany(() => Character, (character) => character.user)
   characters: Character[];

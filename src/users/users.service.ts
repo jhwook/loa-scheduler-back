@@ -35,6 +35,7 @@ export class UsersService {
     const user = this.usersRepository.create({
       username,
       password: hashedPassword,
+      role: 'USER',
     });
 
     return this.usersRepository.save(user);

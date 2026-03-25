@@ -6,8 +6,10 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { CharacterWeeklyRaidGate } from '../../character-weekly-raid/entities/character-weekly-raid-gate.entity';
 
 @Entity('characters')
 export class Character {
@@ -61,6 +63,12 @@ export class Character {
 
   @Column({ nullable: true })
   characterImage: string;
+
+  @OneToMany(
+    () => CharacterWeeklyRaidGate,
+    (characterWeeklyRaidGate) => characterWeeklyRaidGate.character,
+  )
+  weeklyRaidGates: CharacterWeeklyRaidGate[];
 
   @CreateDateColumn()
   createdAt: Date;
