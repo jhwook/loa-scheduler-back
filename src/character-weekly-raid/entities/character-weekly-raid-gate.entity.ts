@@ -12,7 +12,7 @@ import { Character } from '../../characters/entities/character.entity';
 import { RaidGateInfo } from '../../raid-info/entities/raid-gate-info.entity';
 
 @Entity('character_weekly_raid_gate')
-@Unique(['characterId', 'raidGateInfoId', 'weekStartDate'])
+@Unique(['characterId', 'raidGateInfoId'])
 export class CharacterWeeklyRaidGate {
   @PrimaryGeneratedColumn()
   id: number;
@@ -35,20 +35,15 @@ export class CharacterWeeklyRaidGate {
   @JoinColumn({ name: 'raidGateInfoId' })
   raidGateInfo: RaidGateInfo;
 
-  @Column({ type: 'date' })
-  weekStartDate: string;
-
   @Column({ default: false })
   isCleared: boolean;
 
   @Column({ default: false })
   isGoldEarned: boolean;
 
-  // 유저가 더보기 선택했는지
   @Column({ default: false })
   isExtraRewardSelected: boolean;
 
-  // 당시 더보기 비용 snapshot
   @Column({ type: 'int', nullable: true })
   extraRewardCostSnapshot: number | null;
 

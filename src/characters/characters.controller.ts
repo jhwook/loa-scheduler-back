@@ -2,14 +2,12 @@ import {
   Body,
   Controller,
   Get,
+  NotFoundException,
   Param,
   ParseIntPipe,
   Post,
-  Query,
   Req,
   UseGuards,
-  ForbiddenException,
-  NotFoundException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth-guard';
@@ -28,7 +26,7 @@ export class CharactersController {
 
   @UseGuards(JwtAuthGuard)
   @Post(':characterId/weekly-raids')
-  @ApiOperation({ summary: '캐릭터 주간 레이드 숙제 저장' })
+  @ApiOperation({ summary: '캐릭터 레이드 숙제 저장' })
   async createWeeklyRaids(
     @Req() req: any,
     @Param('characterId', ParseIntPipe) characterId: number,
@@ -45,18 +43,16 @@ export class CharactersController {
 
     return this.characterWeeklyRaidGateService.addWeeklyRaidGates(
       characterId,
-      dto.weekStartDate,
       dto.raidGateSelections,
     );
   }
 
   @UseGuards(JwtAuthGuard)
   @Get(':characterId/weekly-raids')
-  @ApiOperation({ summary: '캐릭터 주간 레이드 숙제 목록 조회' })
+  @ApiOperation({ summary: '캐릭터 레이드 숙제 목록 조회' })
   async getWeeklyRaids(
     @Req() req: any,
     @Param('characterId', ParseIntPipe) characterId: number,
-    @Query('weekStartDate') weekStartDate: string,
   ) {
     const character = await this.charactersService.findOneByIdAndUserId(
       characterId,
@@ -67,9 +63,6 @@ export class CharactersController {
       throw new NotFoundException('캐릭터를 찾을 수 없습니다.');
     }
 
-    return this.characterWeeklyRaidGateService.findByCharacterIdAndWeekStartDate(
-      characterId,
-      weekStartDate,
-    );
+    return this.characterWeeklyRaidGateService.findByCharacterId(characterId);
   }
 }

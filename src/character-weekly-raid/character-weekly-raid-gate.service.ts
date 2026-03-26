@@ -6,13 +6,14 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { CharacterWeeklyRaidGate } from './entities/character-weekly-raid-gate.entity';
-import { RaidGateInfo } from 'src/raid-info/entities/raid-gate-info.entity';
+import { RaidGateInfo } from '../raid-info/entities/raid-gate-info.entity';
 
 @Injectable()
 export class CharacterWeeklyRaidGateService {
   constructor(
     @InjectRepository(CharacterWeeklyRaidGate)
     private readonly characterWeeklyRaidGateRepository: Repository<CharacterWeeklyRaidGate>,
+
     @InjectRepository(RaidGateInfo)
     private readonly raidGateInfoRepository: Repository<RaidGateInfo>,
   ) {}
@@ -43,14 +44,10 @@ export class CharacterWeeklyRaidGateService {
     });
   }
 
-  async findByCharacterIdAndWeekStartDate(
-    characterId: number,
-    weekStartDate: string,
-  ) {
+  async findByCharacterId(characterId: number) {
     return this.characterWeeklyRaidGateRepository.find({
       where: {
         characterId,
-        weekStartDate,
       },
       relations: {
         raidGateInfo: {
@@ -63,10 +60,7 @@ export class CharacterWeeklyRaidGateService {
     });
   }
 
-  async findByCharacterIdsAndWeekStartDate(
-    characterIds: number[],
-    weekStartDate: string,
-  ) {
+  async findByCharacterIds(characterIds: number[]) {
     if (characterIds.length === 0) {
       return [];
     }
@@ -74,7 +68,6 @@ export class CharacterWeeklyRaidGateService {
     return this.characterWeeklyRaidGateRepository.find({
       where: {
         characterId: In(characterIds),
-        weekStartDate,
       },
       relations: {
         raidGateInfo: {
@@ -87,16 +80,14 @@ export class CharacterWeeklyRaidGateService {
     });
   }
 
-  async findOneByCharacterIdRaidGateInfoIdAndWeekStartDate(
+  async findOneByCharacterIdAndRaidGateInfoId(
     characterId: number,
     raidGateInfoId: number,
-    weekStartDate: string,
   ) {
     return this.characterWeeklyRaidGateRepository.findOne({
       where: {
         characterId,
         raidGateInfoId,
-        weekStartDate,
       },
       relations: {
         raidGateInfo: {
@@ -122,36 +113,23 @@ export class CharacterWeeklyRaidGateService {
     return this.characterWeeklyRaidGateRepository.remove(entity);
   }
 
-  async removeMany(entities: CharacterWeeklyRaidGate[]) {
-    return this.characterWeeklyRaidGateRepository.remove(entities);
-  }
-
   async deleteById(id: number) {
     return this.characterWeeklyRaidGateRepository.delete({ id });
   }
 
-  async deleteByCharacterIdAndWeekStartDate(
-    characterId: number,
-    weekStartDate: string,
-  ) {
-    return this.characterWeeklyRaidGateRepository.delete({
-      characterId,
-      weekStartDate,
-    });
+  async deleteByCharacterId(characterId: number) {
+    return this.characterWeeklyRaidGateRepository.delete({ characterId });
   }
 
   async addWeeklyRaidGate(
     characterId: number,
     raidGateInfoId: number,
-    weekStartDate: string,
     isExtraRewardSelected: boolean,
   ) {
-    const existing =
-      await this.findOneByCharacterIdRaidGateInfoIdAndWeekStartDate(
-        characterId,
-        raidGateInfoId,
-        weekStartDate,
-      );
+    const existing = await this.findOneByCharacterIdAndRaidGateInfoId(
+      characterId,
+      raidGateInfoId,
+    );
 
     if (existing) {
       return existing;
@@ -159,6 +137,9 @@ export class CharacterWeeklyRaidGateService {
 
     const gateInfo = await this.raidGateInfoRepository.findOne({
       where: { id: raidGateInfoId },
+      relations: {
+        raidInfo: true,
+      },
     });
 
     if (!gateInfo) {
@@ -172,7 +153,6 @@ export class CharacterWeeklyRaidGateService {
     const entity = this.characterWeeklyRaidGateRepository.create({
       characterId,
       raidGateInfoId,
-      weekStartDate,
       isCleared: false,
       isGoldEarned: false,
       isExtraRewardSelected,
@@ -183,6 +163,24 @@ export class CharacterWeeklyRaidGateService {
     });
 
     return this.characterWeeklyRaidGateRepository.save(entity);
+  }
+
+  async addWeeklyRaidGates(
+    characterId: number,
+    selections: Array<{
+      raidGateInfoId: number;
+      isExtraRewardSelected: boolean;
+    }>,
+  ) {
+    for (const selection of selections) {
+      await this.addWeeklyRaidGate(
+        characterId,
+        selection.raidGateInfoId,
+        selection.isExtraRewardSelected,
+      );
+    }
+
+    return this.findByCharacterId(characterId);
   }
 
   async markCleared(id: number) {
@@ -253,61 +251,17 @@ export class CharacterWeeklyRaidGateService {
     return this.characterWeeklyRaidGateRepository.save(entity);
   }
 
-  async addWeeklyRaidGates(
-    characterId: number,
-    weekStartDate: string,
-    selections: Array<{
-      raidGateInfoId: number;
-      isExtraRewardSelected: boolean;
-    }>,
-  ) {
-    const savedEntities: CharacterWeeklyRaidGate[] = [];
+  async resetWeeklyStates() {
+    const entities = await this.characterWeeklyRaidGateRepository.find();
 
-    for (const selection of selections) {
-      const existing =
-        await this.findOneByCharacterIdRaidGateInfoIdAndWeekStartDate(
-          characterId,
-          selection.raidGateInfoId,
-          weekStartDate,
-        );
-
-      if (existing) {
-        savedEntities.push(existing);
-        continue;
-      }
-
-      const gateInfo = await this.raidGateInfoRepository.findOne({
-        where: { id: selection.raidGateInfoId },
-        relations: {
-          raidInfo: true,
-        },
-      });
-
-      if (!gateInfo) {
-        throw new NotFoundException('관문 정보를 찾을 수 없습니다.');
-      }
-
-      if (selection.isExtraRewardSelected && !gateInfo.canExtraReward) {
-        throw new BadRequestException('더보기가 불가능한 관문입니다.');
-      }
-
-      const entity = this.characterWeeklyRaidGateRepository.create({
-        characterId,
-        raidGateInfoId: selection.raidGateInfoId,
-        weekStartDate,
-        isCleared: false,
-        isGoldEarned: false,
-        isExtraRewardSelected: selection.isExtraRewardSelected,
-        extraRewardCostSnapshot: selection.isExtraRewardSelected
-          ? gateInfo.extraRewardCost
-          : null,
-        clearedAt: null,
-      });
-
-      const saved = await this.characterWeeklyRaidGateRepository.save(entity);
-      savedEntities.push(saved);
+    for (const entity of entities) {
+      entity.isCleared = false;
+      entity.isGoldEarned = false;
+      entity.isExtraRewardSelected = false;
+      entity.extraRewardCostSnapshot = null;
+      entity.clearedAt = null;
     }
 
-    return this.findByCharacterIdAndWeekStartDate(characterId, weekStartDate);
+    return this.characterWeeklyRaidGateRepository.save(entities);
   }
 }

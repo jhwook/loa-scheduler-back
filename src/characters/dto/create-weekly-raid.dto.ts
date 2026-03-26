@@ -2,7 +2,6 @@ import {
   ArrayNotEmpty,
   IsArray,
   IsBoolean,
-  IsDateString,
   IsInt,
   Min,
   ValidateNested,
@@ -22,10 +21,6 @@ export class RaidGateSelectionDto {
 }
 
 export class CreateWeeklyRaidDto {
-  @ApiProperty({ example: '2026-03-24' })
-  @IsDateString()
-  weekStartDate: string;
-
   @ApiProperty({
     type: [RaidGateSelectionDto],
     example: [
