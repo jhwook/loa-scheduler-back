@@ -264,4 +264,71 @@ export class CharacterWeeklyRaidGateService {
 
     return this.characterWeeklyRaidGateRepository.save(entities);
   }
+
+  async updateClearStatus(id: number, isCleared: boolean) {
+    const entity = await this.characterWeeklyRaidGateRepository.findOne({
+      where: { id },
+    });
+
+    if (!entity) {
+      throw new NotFoundException('숙제를 찾을 수 없습니다.');
+    }
+
+    entity.isCleared = isCleared;
+    entity.clearedAt = isCleared ? new Date() : null;
+
+    return this.characterWeeklyRaidGateRepository.save(entity);
+  }
+
+  async upsertWeeklyRaidGate(
+    characterId: number,
+    data: {
+      raidGateInfoId: number;
+      isExtraRewardSelected: boolean;
+    },
+  ) {
+    let entity = await this.characterWeeklyRaidGateRepository.findOne({
+      where: {
+        characterId,
+        raidGateInfoId: data.raidGateInfoId,
+      },
+    });
+
+    const gateInfo = await this.raidGateInfoRepository.findOne({
+      where: { id: data.raidGateInfoId },
+    });
+
+    if (!gateInfo) {
+      throw new NotFoundException('관문 정보를 찾을 수 없습니다.');
+    }
+
+    if (data.isExtraRewardSelected && !gateInfo.canExtraReward) {
+      throw new BadRequestException('더보기가 불가능한 관문입니다.');
+    }
+
+    // 있으면 update
+    if (entity) {
+      entity.isExtraRewardSelected = data.isExtraRewardSelected;
+      entity.extraRewardCostSnapshot = data.isExtraRewardSelected
+        ? gateInfo.extraRewardCost
+        : null;
+
+      return this.characterWeeklyRaidGateRepository.save(entity);
+    }
+
+    // 없으면 create
+    entity = this.characterWeeklyRaidGateRepository.create({
+      characterId,
+      raidGateInfoId: data.raidGateInfoId,
+      isCleared: false,
+      isGoldEarned: false,
+      isExtraRewardSelected: data.isExtraRewardSelected,
+      extraRewardCostSnapshot: data.isExtraRewardSelected
+        ? gateInfo.extraRewardCost
+        : null,
+      clearedAt: null,
+    });
+
+    return this.characterWeeklyRaidGateRepository.save(entity);
+  }
 }

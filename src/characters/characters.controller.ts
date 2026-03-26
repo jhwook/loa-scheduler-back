@@ -5,6 +5,7 @@ import {
   NotFoundException,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Req,
   UseGuards,
@@ -14,6 +15,8 @@ import { JwtAuthGuard } from '../auth/jwt-auth-guard';
 import { CharactersService } from './characters.service';
 import { CharacterWeeklyRaidGateService } from '../character-weekly-raid/character-weekly-raid-gate.service';
 import { CreateWeeklyRaidDto } from './dto/create-weekly-raid.dto';
+import { UpdateClearStatusDto } from 'src/character-weekly-raid/dto/update-clear-status.dto';
+import { UpdateWeeklyRaidGateDto } from 'src/character-weekly-raid/dto/update-weekly-raid-gate.dto';
 
 @ApiTags('Characters')
 @ApiBearerAuth()
@@ -64,5 +67,47 @@ export class CharactersController {
     }
 
     return this.characterWeeklyRaidGateService.findByCharacterId(characterId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('weekly-raids/:id/clear')
+  @ApiOperation({ summary: '레이드 숙제 클리어 체크/해제' })
+  async updateClearStatus(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateClearStatusDto,
+  ) {
+    return this.characterWeeklyRaidGateService.updateClearStatus(
+      id,
+      dto.isCleared,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('weekly-raids/:id')
+  @ApiOperation({ summary: '레이드 숙제 수정' })
+  async updateWeeklyRaid(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateWeeklyRaidGateDto,
+  ) {
+    const weeklyRaid = await this.characterWeeklyRaidGateService.findOneById(
+      id,
+    );
+
+    if (!weeklyRaid) {
+      throw new NotFoundException('숙제를 찾을 수 없습니다.');
+    }
+
+    const character = await this.charactersService.findOneByIdAndUserId(
+      weeklyRaid.characterId,
+      req.user.userId,
+    );
+
+    if (!character) {
+      throw new NotFoundException('캐릭터를 찾을 수 없습니다.');
+    }
+
+    return this.characterWeeklyRaidGateService.upsertWeeklyRaidGate(id, dto);
   }
 }
