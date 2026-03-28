@@ -1,12 +1,14 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
   ParseIntPipe,
   Patch,
   Post,
+  Put,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -17,6 +19,7 @@ import { CharacterWeeklyRaidGateService } from '../character-weekly-raid/charact
 import { CreateWeeklyRaidDto } from './dto/create-weekly-raid.dto';
 import { UpdateClearStatusDto } from 'src/character-weekly-raid/dto/update-clear-status.dto';
 import { UpdateWeeklyRaidGateDto } from 'src/character-weekly-raid/dto/update-weekly-raid-gate.dto';
+import { DeleteWeeklyRaidByRaidDto } from './dto/delete-weekly-raid-by-raid.dto';
 
 @ApiTags('Characters')
 @ApiBearerAuth()
@@ -91,6 +94,7 @@ export class CharactersController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateWeeklyRaidGateDto,
   ) {
+    console.log('updateWeeklyRaid called with id:', id, 'and dto:', dto);
     const weeklyRaid = await this.characterWeeklyRaidGateService.findOneById(
       id,
     );
@@ -109,5 +113,51 @@ export class CharactersController {
     }
 
     return this.characterWeeklyRaidGateService.upsertWeeklyRaidGate(id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put(':characterId/weekly-raids')
+  @ApiOperation({ summary: '캐릭터 레이드 숙제 목록 전체 수정' })
+  async replaceWeeklyRaids(
+    @Req() req: any,
+    @Param('characterId', ParseIntPipe) characterId: number,
+    @Body() dto: CreateWeeklyRaidDto,
+  ) {
+    const character = await this.charactersService.findOneByIdAndUserId(
+      characterId,
+      req.user.userId,
+    );
+
+    if (!character) {
+      throw new NotFoundException('캐릭터를 찾을 수 없습니다.');
+    }
+
+    return this.characterWeeklyRaidGateService.replaceWeeklyRaidGates(
+      characterId,
+      dto.raidGateSelections,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':characterId/weekly-raids/raid')
+  @ApiOperation({ summary: '캐릭터의 특정 레이드 숙제 전체 삭제' })
+  async deleteWeeklyRaidByRaid(
+    @Req() req: any,
+    @Param('characterId', ParseIntPipe) characterId: number,
+    @Body() dto: DeleteWeeklyRaidByRaidDto,
+  ) {
+    const character = await this.charactersService.findOneByIdAndUserId(
+      characterId,
+      req.user.userId,
+    );
+
+    if (!character) {
+      throw new NotFoundException('캐릭터를 찾을 수 없습니다.');
+    }
+
+    return this.characterWeeklyRaidGateService.deleteWeeklyRaidGatesByRaidInfo(
+      characterId,
+      dto.raidInfoId,
+    );
   }
 }

@@ -287,17 +287,23 @@ export class CharacterWeeklyRaidGateService {
       isExtraRewardSelected: boolean;
     },
   ) {
+    console.log(
+      'upsertWeeklyRaidGate called with characterId:',
+      characterId,
+      'and data:',
+      data,
+    );
     let entity = await this.characterWeeklyRaidGateRepository.findOne({
       where: {
         characterId,
         raidGateInfoId: data.raidGateInfoId,
       },
     });
-
+    console.log('Existing entity:', entity);
     const gateInfo = await this.raidGateInfoRepository.findOne({
       where: { id: data.raidGateInfoId },
     });
-
+    console.log('Gate info:', gateInfo);
     if (!gateInfo) {
       throw new NotFoundException('관문 정보를 찾을 수 없습니다.');
     }
@@ -330,5 +336,116 @@ export class CharacterWeeklyRaidGateService {
     });
 
     return this.characterWeeklyRaidGateRepository.save(entity);
+  }
+
+  async replaceWeeklyRaidGates(
+    characterId: number,
+    selections: Array<{
+      raidGateInfoId: number;
+      isExtraRewardSelected: boolean;
+    }>,
+  ) {
+    const existing = await this.characterWeeklyRaidGateRepository.find({
+      where: { characterId },
+    });
+
+    const existingMap = new Map(
+      existing.map((item) => [item.raidGateInfoId, item]),
+    );
+
+    const incomingIds = selections.map((item) => item.raidGateInfoId);
+
+    const entitiesToSave: CharacterWeeklyRaidGate[] = [];
+
+    for (const selection of selections) {
+      const gateInfo = await this.raidGateInfoRepository.findOne({
+        where: { id: selection.raidGateInfoId },
+        relations: {
+          raidInfo: true,
+        },
+      });
+
+      if (!gateInfo) {
+        throw new NotFoundException(
+          `관문 정보를 찾을 수 없습니다. id=${selection.raidGateInfoId}`,
+        );
+      }
+
+      if (selection.isExtraRewardSelected && !gateInfo.canExtraReward) {
+        throw new BadRequestException('더보기가 불가능한 관문입니다.');
+      }
+
+      const existingEntity = existingMap.get(selection.raidGateInfoId);
+
+      if (existingEntity) {
+        existingEntity.isExtraRewardSelected = selection.isExtraRewardSelected;
+        existingEntity.extraRewardCostSnapshot = selection.isExtraRewardSelected
+          ? gateInfo.extraRewardCost
+          : null;
+
+        entitiesToSave.push(existingEntity);
+      } else {
+        const newEntity = this.characterWeeklyRaidGateRepository.create({
+          characterId,
+          raidGateInfoId: selection.raidGateInfoId,
+          isCleared: false,
+          isGoldEarned: false,
+          isExtraRewardSelected: selection.isExtraRewardSelected,
+          extraRewardCostSnapshot: selection.isExtraRewardSelected
+            ? gateInfo.extraRewardCost
+            : null,
+          clearedAt: null,
+        });
+
+        entitiesToSave.push(newEntity);
+      }
+    }
+
+    const entitiesToDelete = existing.filter(
+      (item) => !incomingIds.includes(item.raidGateInfoId),
+    );
+
+    if (entitiesToDelete.length > 0) {
+      await this.characterWeeklyRaidGateRepository.remove(entitiesToDelete);
+    }
+
+    await this.characterWeeklyRaidGateRepository.save(entitiesToSave);
+
+    return this.findByCharacterId(characterId);
+  }
+
+  async deleteWeeklyRaidGatesByRaidInfo(
+    characterId: number,
+    raidInfoId: number,
+  ) {
+    const targets = await this.characterWeeklyRaidGateRepository.find({
+      where: {
+        characterId,
+      },
+      relations: {
+        raidGateInfo: {
+          raidInfo: true,
+        },
+      },
+    });
+
+    const toDelete = targets.filter(
+      (item) => item.raidGateInfo?.raidInfoId === raidInfoId,
+    );
+
+    if (toDelete.length === 0) {
+      return {
+        message: '삭제할 레이드 숙제가 없습니다.',
+        deletedCount: 0,
+      };
+    }
+
+    await this.characterWeeklyRaidGateRepository.remove(toDelete);
+
+    return {
+      message: '레이드 숙제가 삭제되었습니다.',
+      deletedCount: toDelete.length,
+      deletedRaidInfoId: raidInfoId,
+    };
   }
 }
