@@ -31,6 +31,10 @@ export class UsersService {
     });
   }
 
+  async save(user: User) {
+    return this.usersRepository.save(user);
+  }
+
   create(username: string, hashedPassword: string) {
     const user = this.usersRepository.create({
       username,

@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { RaidGateInfo } from './raid-gate-info.entity';
+import { RaidParty } from 'src/raid-party/entites/raid-party.entity';
 
 @Entity('raid_info')
 export class RaidInfo {
@@ -27,6 +28,9 @@ export class RaidInfo {
 
   @OneToMany(() => RaidGateInfo, (raidGateInfo) => raidGateInfo.raidInfo)
   raidGates: RaidGateInfo[];
+
+  @OneToMany(() => RaidParty, (raidParty) => raidParty.raidInfo)
+  raidParties: RaidParty[];
 
   @CreateDateColumn()
   createdAt: Date;

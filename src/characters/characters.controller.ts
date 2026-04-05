@@ -31,6 +31,26 @@ export class CharactersController {
   ) {}
 
   @UseGuards(JwtAuthGuard)
+  @Post(':characterId/refresh')
+  @ApiOperation({ summary: '개별 캐릭터 새로고침' })
+  refreshCharacter(
+    @Req() req: any,
+    @Param('characterId', ParseIntPipe) characterId: number,
+  ) {
+    return this.charactersService.refreshCharacter(
+      req.user.userId,
+      characterId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('refresh-all')
+  @ApiOperation({ summary: '전체 캐릭터 새로고침' })
+  refreshAllCharacters(@Req() req: any) {
+    return this.charactersService.refreshAllCharacters(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post(':characterId/weekly-raids')
   @ApiOperation({ summary: '캐릭터 레이드 숙제 저장' })
   async createWeeklyRaids(
@@ -94,7 +114,6 @@ export class CharactersController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateWeeklyRaidGateDto,
   ) {
-    console.log('updateWeeklyRaid called with id:', id, 'and dto:', dto);
     const weeklyRaid = await this.characterWeeklyRaidGateService.findOneById(
       id,
     );

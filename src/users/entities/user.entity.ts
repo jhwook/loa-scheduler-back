@@ -7,6 +7,9 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Character } from '../../characters/entities/character.entity';
+import { PartyGroup } from 'src/party-group/entities/party-group.entity';
+import { PartyGroupMember } from 'src/party-group/entities/party-group-member.entity';
+import { RaidParty } from 'src/raid-party/entites/raid-party.entity';
 
 export type UserRole = 'USER' | 'ADMIN';
 
@@ -36,8 +39,20 @@ export class User {
   })
   role: UserRole;
 
+  @Column({ type: 'timestamp', nullable: true })
+  lastFullSyncAt: Date | null;
+
   @OneToMany(() => Character, (character) => character.user)
   characters: Character[];
+
+  @OneToMany(() => PartyGroup, (group) => group.ownerUser)
+  ownedGroups: PartyGroup[];
+
+  @OneToMany(() => PartyGroupMember, (member) => member.user)
+  groupMemberships: PartyGroupMember[];
+
+  @OneToMany(() => RaidParty, (raidParty) => raidParty.createdByUser)
+  createdRaidParties: RaidParty[];
 
   @CreateDateColumn()
   createdAt: Date;

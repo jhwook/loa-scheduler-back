@@ -7,6 +7,8 @@ import { CharactersModule } from './characters/characters.module';
 import { LostarkModule } from './lostark/lostark.module';
 import { RaidInfoModule } from './raid-info/raid-info.module';
 import { CharacterWeeklyRaidGateModule } from './character-weekly-raid/character-weekly-raid-gate.module';
+import { PartyGroupModule } from './party-group/party-group.module';
+import { RaidPartyModule } from './raid-party/raid-party.module';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { CharacterWeeklyRaidGateModule } from './character-weekly-raid/character
     LostarkModule,
     RaidInfoModule,
     CharacterWeeklyRaidGateModule,
+    PartyGroupModule,
+    RaidPartyModule,
   ],
 })
 export class AppModule {}

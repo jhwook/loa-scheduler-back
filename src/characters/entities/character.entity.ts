@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { CharacterWeeklyRaidGate } from '../../character-weekly-raid/entities/character-weekly-raid-gate.entity';
+import { RaidPartyMember } from 'src/raid-party/entites/raid-party-member.entity';
 
 @Entity('characters')
 export class Character {
@@ -64,11 +65,20 @@ export class Character {
   @Column({ nullable: true })
   characterImage: string;
 
+  @Column({ type: 'timestamp', nullable: true })
+  lastSyncedAt: Date | null;
+
   @OneToMany(
     () => CharacterWeeklyRaidGate,
     (characterWeeklyRaidGate) => characterWeeklyRaidGate.character,
   )
   weeklyRaidGates: CharacterWeeklyRaidGate[];
+
+  @OneToMany(
+    () => RaidPartyMember,
+    (raidPartyMember) => raidPartyMember.character,
+  )
+  raidPartyMembers: RaidPartyMember[];
 
   @CreateDateColumn()
   createdAt: Date;
