@@ -11,6 +11,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { PartyGroupMember } from './party-group-member.entity';
 import { RaidParty } from 'src/raid-party/entites/raid-party.entity';
+import { PartyGroupInvite } from './party-group-invite.entity';
 
 @Entity('party_group')
 export class PartyGroup {
@@ -40,6 +41,9 @@ export class PartyGroup {
 
   @OneToMany(() => RaidParty, (raidParty) => raidParty.group)
   raidParties: RaidParty[];
+
+  @OneToMany(() => PartyGroupInvite, (invite) => invite.group)
+  invites: PartyGroupInvite[];
 
   @CreateDateColumn()
   createdAt: Date;

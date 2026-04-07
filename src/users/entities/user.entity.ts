@@ -10,6 +10,7 @@ import { Character } from '../../characters/entities/character.entity';
 import { PartyGroup } from 'src/party-group/entities/party-group.entity';
 import { PartyGroupMember } from 'src/party-group/entities/party-group-member.entity';
 import { RaidParty } from 'src/raid-party/entites/raid-party.entity';
+import { PartyGroupInvite } from 'src/party-group/entities/party-group-invite.entity';
 
 export type UserRole = 'USER' | 'ADMIN';
 
@@ -20,6 +21,9 @@ export class User {
 
   @Column({ unique: true })
   username: string;
+
+  @Column({ unique: true, length: 30, nullable: true })
+  nickname: string;
 
   @Column()
   password: string;
@@ -53,6 +57,12 @@ export class User {
 
   @OneToMany(() => RaidParty, (raidParty) => raidParty.createdByUser)
   createdRaidParties: RaidParty[];
+
+  @OneToMany(() => PartyGroupInvite, (invite) => invite.invitedUser)
+  receivedPartyGroupInvites: PartyGroupInvite[];
+
+  @OneToMany(() => PartyGroupInvite, (invite) => invite.invitedByUser)
+  sentPartyGroupInvites: PartyGroupInvite[];
 
   @CreateDateColumn()
   createdAt: Date;

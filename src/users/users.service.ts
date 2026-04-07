@@ -2,9 +2,10 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { LostarkService } from '../lostark/lostark.service';
 import { CharactersService } from 'src/characters/characters.service';
@@ -35,12 +36,65 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
-  create(username: string, hashedPassword: string) {
+  async create(username: string, nickname: string, hashedPassword: string) {
+    const existingUsername = await this.usersRepository.findOne({
+      where: { username },
+    });
+
+    if (existingUsername) {
+      throw new ConflictException('이미 사용 중인 아이디입니다.');
+    }
+
+    const existingNickname = await this.usersRepository.findOne({
+      where: { nickname },
+    });
+
+    if (existingNickname) {
+      throw new ConflictException('이미 사용 중인 닉네임입니다.');
+    }
+
     const user = this.usersRepository.create({
       username,
+      nickname,
       password: hashedPassword,
       role: 'USER',
     });
+
+    return this.usersRepository.save(user);
+  }
+
+  async updateProfile(
+    userId: number,
+    data: {
+      nickname?: string;
+    },
+  ) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('유저를 찾을 수 없습니다.');
+    }
+
+    if (
+      data.nickname &&
+      data.nickname.trim() !== '' &&
+      data.nickname !== user.nickname
+    ) {
+      const existingNickname = await this.usersRepository.findOne({
+        where: {
+          nickname: data.nickname,
+          id: Not(userId),
+        },
+      });
+
+      if (existingNickname) {
+        throw new ConflictException('이미 사용 중인 닉네임입니다.');
+      }
+
+      user.nickname = data.nickname;
+    }
 
     return this.usersRepository.save(user);
   }
@@ -62,6 +116,23 @@ export class UsersService {
 
     return {
       message: '로스트아크 API 키가 등록되었습니다.',
+    };
+  }
+
+  async checkNicknameAvailable(nickname: string, excludeUserId?: number) {
+    const query = this.usersRepository
+      .createQueryBuilder('user')
+      .where('user.nickname = :nickname', { nickname });
+
+    if (excludeUserId) {
+      query.andWhere('user.id != :excludeUserId', { excludeUserId });
+    }
+
+    const existingUser = await query.getOne();
+
+    return {
+      nickname,
+      available: !existingUser,
     };
   }
 

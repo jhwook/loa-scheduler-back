@@ -9,10 +9,17 @@ import { CharactersModule } from 'src/characters/characters.module';
 import { PartyGroup } from 'src/party-group/entities/party-group.entity';
 import { PartyGroupMember } from 'src/party-group/entities/party-group-member.entity';
 import { RaidParty } from 'src/raid-party/entites/raid-party.entity';
+import { PartyGroupInvite } from 'src/party-group/entities/party-group-invite.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, PartyGroup, PartyGroupMember, RaidParty]),
+    TypeOrmModule.forFeature([
+      User,
+      PartyGroup,
+      PartyGroupMember,
+      RaidParty,
+      PartyGroupInvite,
+    ]),
     LostarkModule,
     CharactersModule,
   ],

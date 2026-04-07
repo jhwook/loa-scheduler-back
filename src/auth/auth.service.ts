@@ -17,23 +17,31 @@ export class AuthService {
   ) {}
 
   async signup(signupDto: SignupDto) {
-    const { username, password } = signupDto;
-
-    const existingUser = await this.usersService.findByUsername(username);
-
-    if (existingUser) {
-      throw new BadRequestException('이미 존재하는 아이디입니다.');
-    }
-
+    const { username, nickname, password } = signupDto;
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await this.usersService.create(username, hashedPassword);
+    const user = await this.usersService.create(
+      username,
+      nickname,
+      hashedPassword,
+    );
+
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      role: user.role,
+    };
+
+    const accessToken = await this.jwtService.signAsync(payload);
 
     return {
-      message: '회원가입 성공',
+      message: '회원가입이 완료되었습니다.',
+      accessToken,
       user: {
         id: user.id,
         username: user.username,
+        nickname: user.nickname,
+        role: user.role,
       },
     };
   }
