@@ -8,6 +8,7 @@ import { In, Repository } from 'typeorm';
 import { Character } from './entities/character.entity';
 import { LostarkService } from 'src/lostark/lostark.service';
 import { User } from 'src/users/entities/user.entity';
+import { CharacterWeeklyRaidGate } from 'src/character-weekly-raid/entities/character-weekly-raid-gate.entity';
 
 @Injectable()
 export class CharactersService {
@@ -20,6 +21,8 @@ export class CharactersService {
     private readonly lostarkService: LostarkService,
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    @InjectRepository(CharacterWeeklyRaidGate)
+    private readonly characterWeeklyRaidGateRepository: Repository<CharacterWeeklyRaidGate>,
   ) {}
 
   async findByUserId(userId: number) {
@@ -56,6 +59,29 @@ export class CharactersService {
 
   async remove(character: Character) {
     return this.charactersRepository.remove(character);
+  }
+
+  async deleteCharacter(userId: number, characterId: number) {
+    const character = await this.charactersRepository.findOne({
+      where: {
+        id: characterId,
+        userId,
+      },
+    });
+
+    if (!character) {
+      throw new NotFoundException('캐릭터를 찾을 수 없습니다.');
+    }
+
+    await this.charactersRepository.remove(character);
+
+    return {
+      message: '캐릭터가 삭제되었습니다.',
+      deletedCharacter: {
+        id: character.id,
+        characterName: character.characterName,
+      },
+    };
   }
 
   private ensureCooldown(lastSyncedAt: Date | null, cooldownMs: number) {
@@ -197,6 +223,104 @@ export class CharactersService {
       successCount,
       failedCount,
       results,
+    };
+  }
+
+  async getDashboard(userId: number) {
+    const characters = await this.charactersRepository.find({
+      where: { userId },
+      order: {
+        createdAt: 'ASC',
+      },
+    });
+
+    const weeklyRaidGates = await this.characterWeeklyRaidGateRepository.find({
+      where: characters.length
+        ? characters.map((character) => ({ characterId: character.id }))
+        : [],
+      relations: {
+        raidGateInfo: {
+          raidInfo: true,
+        },
+      },
+      order: {
+        createdAt: 'ASC',
+      },
+    });
+
+    const weeklyRaidMap = new Map<number, CharacterWeeklyRaidGate[]>();
+
+    for (const weeklyRaid of weeklyRaidGates) {
+      if (!weeklyRaidMap.has(weeklyRaid.characterId)) {
+        weeklyRaidMap.set(weeklyRaid.characterId, []);
+      }
+      weeklyRaidMap.get(weeklyRaid.characterId)!.push(weeklyRaid);
+    }
+
+    const characterCards = characters.map((character) => {
+      const characterWeeklyRaids = weeklyRaidMap.get(character.id) ?? [];
+
+      let weeklyGoldTotal = 0;
+      let weeklyBoundGoldTotal = 0;
+
+      for (const weeklyRaid of characterWeeklyRaids) {
+        weeklyGoldTotal += weeklyRaid.raidGateInfo.rewardGold ?? 0;
+        weeklyBoundGoldTotal += weeklyRaid.raidGateInfo.boundGold ?? 0;
+      }
+
+      return {
+        id: character.id,
+        characterName: character.characterName,
+        serverName: character.serverName,
+        characterClassName: character.characterClassName,
+        characterLevel: character.characterLevel,
+        itemAvgLevel: character.itemAvgLevel,
+        itemMaxLevel: character.itemMaxLevel,
+        combatPower: character.combatPower,
+        characterImage: character.characterImage,
+        lastSyncedAt: character.lastSyncedAt,
+        weeklyGoldTotal,
+        weeklyBoundGoldTotal,
+        weeklyRaids: characterWeeklyRaids.map((weeklyRaid) => ({
+          id: weeklyRaid.id,
+          isCleared: weeklyRaid.isCleared,
+          isGoldEarned: weeklyRaid.isGoldEarned,
+          isExtraRewardSelected: weeklyRaid.isExtraRewardSelected,
+          extraRewardCostSnapshot: weeklyRaid.extraRewardCostSnapshot,
+          raidGateInfo: {
+            id: weeklyRaid.raidGateInfo.id,
+            difficulty: weeklyRaid.raidGateInfo.difficulty,
+            gateNumber: weeklyRaid.raidGateInfo.gateNumber,
+            gateName: weeklyRaid.raidGateInfo.gateName,
+            rewardGold: weeklyRaid.raidGateInfo.rewardGold,
+            boundGold: weeklyRaid.raidGateInfo.boundGold,
+            isSingleMode: weeklyRaid.raidGateInfo.isSingleMode,
+            canExtraReward: weeklyRaid.raidGateInfo.canExtraReward,
+            extraRewardCost: weeklyRaid.raidGateInfo.extraRewardCost,
+            raidInfo: {
+              id: weeklyRaid.raidGateInfo.raidInfo.id,
+              raidName: weeklyRaid.raidGateInfo.raidInfo.raidName,
+            },
+          },
+        })),
+      };
+    });
+
+    const totalWeeklyGold = characterCards.reduce(
+      (sum, character) => sum + character.weeklyGoldTotal,
+      0,
+    );
+
+    const totalWeeklyBoundGold = characterCards.reduce(
+      (sum, character) => sum + character.weeklyBoundGoldTotal,
+      0,
+    );
+
+    return {
+      totalCharacterCount: characterCards.length,
+      totalWeeklyGold,
+      totalWeeklyBoundGold,
+      characters: characterCards,
     };
   }
 }

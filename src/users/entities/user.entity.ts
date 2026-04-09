@@ -11,6 +11,7 @@ import { PartyGroup } from 'src/party-group/entities/party-group.entity';
 import { PartyGroupMember } from 'src/party-group/entities/party-group-member.entity';
 import { RaidParty } from 'src/raid-party/entites/raid-party.entity';
 import { PartyGroupInvite } from 'src/party-group/entities/party-group-invite.entity';
+import { PartyGroupMemberCharacter } from 'src/party-group/entities/party-group-member-character.entity';
 
 export type UserRole = 'USER' | 'ADMIN';
 
@@ -63,6 +64,12 @@ export class User {
 
   @OneToMany(() => PartyGroupInvite, (invite) => invite.invitedByUser)
   sentPartyGroupInvites: PartyGroupInvite[];
+
+  @OneToMany(
+    () => PartyGroupMemberCharacter,
+    (memberCharacter) => memberCharacter.user,
+  )
+  partyGroupCharacters: PartyGroupMemberCharacter[];
 
   @CreateDateColumn()
   createdAt: Date;

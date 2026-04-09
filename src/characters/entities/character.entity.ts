@@ -11,6 +11,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { CharacterWeeklyRaidGate } from '../../character-weekly-raid/entities/character-weekly-raid-gate.entity';
 import { RaidPartyMember } from 'src/raid-party/entites/raid-party-member.entity';
+import { PartyGroupMemberCharacter } from 'src/party-group/entities/party-group-member-character.entity';
 
 @Entity('characters')
 export class Character {
@@ -79,6 +80,12 @@ export class Character {
     (raidPartyMember) => raidPartyMember.character,
   )
   raidPartyMembers: RaidPartyMember[];
+
+  @OneToMany(
+    () => PartyGroupMemberCharacter,
+    (memberCharacter) => memberCharacter.character,
+  )
+  partyGroupMemberCharacters: PartyGroupMemberCharacter[];
 
   @CreateDateColumn()
   createdAt: Date;

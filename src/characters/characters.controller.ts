@@ -31,6 +31,16 @@ export class CharactersController {
   ) {}
 
   @UseGuards(JwtAuthGuard)
+  @Delete(':characterId')
+  @ApiOperation({ summary: '캐릭터 삭제' })
+  deleteCharacter(
+    @Req() req: any,
+    @Param('characterId', ParseIntPipe) characterId: number,
+  ) {
+    return this.charactersService.deleteCharacter(req.user.userId, characterId);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post(':characterId/refresh')
   @ApiOperation({ summary: '개별 캐릭터 새로고침' })
   refreshCharacter(
@@ -178,5 +188,12 @@ export class CharactersController {
       characterId,
       dto.raidInfoId,
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('dashboard')
+  @ApiOperation({ summary: '원정대 탭 전체 조회' })
+  getDashboard(@Req() req: any) {
+    return this.charactersService.getDashboard(req.user.userId);
   }
 }

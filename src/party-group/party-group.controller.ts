@@ -89,4 +89,19 @@ export class PartyGroupController {
       req.user.userId,
     );
   }
+
+  @Post(':groupId/leave')
+  @ApiOperation({ summary: '공격대 탈퇴' })
+  leaveGroup(@Req() req: any, @Param('groupId', ParseIntPipe) groupId: number) {
+    return this.partyGroupService.leaveGroup(groupId, req.user.userId);
+  }
+
+  @Delete(':groupId')
+  @ApiOperation({ summary: '공격대 삭제 (공대장만 가능)' })
+  deleteGroup(
+    @Req() req: any,
+    @Param('groupId', ParseIntPipe) groupId: number,
+  ) {
+    return this.partyGroupService.deleteGroup(groupId, req.user.userId);
+  }
 }

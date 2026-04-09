@@ -10,6 +10,9 @@ import { PartyGroupInviteController } from './party-group-invite.controller';
 import { User } from '../users/entities/user.entity';
 import { Character } from '../characters/entities/character.entity';
 import { CharacterWeeklyRaidGate } from 'src/character-weekly-raid/entities/character-weekly-raid-gate.entity';
+import { PartyGroupMemberCharacter } from './entities/party-group-member-character.entity';
+import { PartyGroupMemberCharacterController } from './party-group-member-character.controller';
+import { PartyGroupMemberCharacterService } from './party-group-member-character.service';
 
 @Module({
   imports: [
@@ -20,10 +23,23 @@ import { CharacterWeeklyRaidGate } from 'src/character-weekly-raid/entities/char
       User,
       Character,
       CharacterWeeklyRaidGate,
+      PartyGroupMemberCharacter,
     ]),
   ],
-  controllers: [PartyGroupController, PartyGroupInviteController],
-  providers: [PartyGroupService, PartyGroupInviteService],
-  exports: [PartyGroupService, PartyGroupInviteService],
+  controllers: [
+    PartyGroupController,
+    PartyGroupInviteController,
+    PartyGroupMemberCharacterController,
+  ],
+  providers: [
+    PartyGroupService,
+    PartyGroupInviteService,
+    PartyGroupMemberCharacterService,
+  ],
+  exports: [
+    PartyGroupService,
+    PartyGroupInviteService,
+    PartyGroupMemberCharacterService,
+  ],
 })
 export class PartyGroupModule {}

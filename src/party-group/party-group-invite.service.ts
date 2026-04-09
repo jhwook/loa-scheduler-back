@@ -203,7 +203,7 @@ export class PartyGroupInviteService {
       groupId: invite.groupId,
       userId,
       role: 'MEMBER',
-      nickname: null,
+      nickname: invite.invitedUser?.nickname,
     });
 
     await this.partyGroupMemberRepository.save(member);

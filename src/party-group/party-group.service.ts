@@ -59,6 +59,7 @@ export class PartyGroupService {
       groupId: savedGroup.id,
       userId: ownerUserId,
       role: 'OWNER',
+      nickname: owner.nickname,
     });
 
     await this.partyGroupMemberRepository.save(ownerMember);
@@ -283,7 +284,7 @@ export class PartyGroupService {
       groupId,
       userId: targetUserId,
       role: 'MEMBER',
-      nickname: nickname ?? null,
+      nickname: targetUser.nickname,
     });
 
     await this.partyGroupMemberRepository.save(member);
@@ -308,10 +309,6 @@ export class PartyGroupService {
       throw new ForbiddenException('해당 그룹에 접근할 수 없습니다.');
     }
 
-    if (!['OWNER', 'ADMIN'].includes(requesterMembership.role)) {
-      throw new ForbiddenException('멤버 별명을 수정할 권한이 없습니다.');
-    }
-
     const member = await this.partyGroupMemberRepository.findOne({
       where: {
         id: memberId,
@@ -321,6 +318,11 @@ export class PartyGroupService {
 
     if (!member) {
       throw new NotFoundException('그룹 멤버를 찾을 수 없습니다.');
+    }
+
+    // 본인만 자기 별명 수정 가능
+    if (member.userId !== requesterUserId) {
+      throw new ForbiddenException('본인 별명만 수정할 수 있습니다.');
     }
 
     member.nickname = nickname ?? null;
@@ -376,6 +378,87 @@ export class PartyGroupService {
         userId: member.userId,
         username: member.user.username,
         nickname: member.nickname,
+      },
+    };
+  }
+
+  async leaveGroup(groupId: number, userId: number) {
+    const group = await this.partyGroupRepository.findOne({
+      where: { id: groupId },
+    });
+
+    if (!group) {
+      throw new NotFoundException('그룹을 찾을 수 없습니다.');
+    }
+
+    const myMembership = await this.partyGroupMemberRepository.findOne({
+      where: {
+        groupId,
+        userId,
+      },
+    });
+
+    if (!myMembership) {
+      throw new NotFoundException('그룹 멤버 정보를 찾을 수 없습니다.');
+    }
+
+    const memberCount = await this.partyGroupMemberRepository.count({
+      where: { groupId },
+    });
+
+    // 공대장인 경우
+    if (myMembership.role === 'OWNER') {
+      // 혼자 남아 있으면 그룹 자체 삭제
+      if (memberCount === 1) {
+        await this.partyGroupRepository.remove(group);
+
+        return {
+          message: '마지막 멤버가 탈퇴하여 그룹이 삭제되었습니다.',
+          deletedGroup: {
+            id: group.id,
+            name: group.name,
+          },
+        };
+      }
+
+      // 다른 멤버가 있으면 탈퇴 불가
+      throw new BadRequestException(
+        '공대장은 바로 탈퇴할 수 없습니다. 그룹장을 넘기거나 그룹을 삭제해주세요.',
+      );
+    }
+
+    // 일반 멤버는 그냥 탈퇴
+    await this.partyGroupMemberRepository.remove(myMembership);
+
+    return {
+      message: '그룹에서 탈퇴했습니다.',
+      leftGroup: {
+        id: group.id,
+        name: group.name,
+      },
+    };
+  }
+
+  async deleteGroup(groupId: number, requesterUserId: number) {
+    const group = await this.partyGroupRepository.findOne({
+      where: { id: groupId },
+    });
+
+    if (!group) {
+      throw new NotFoundException('그룹을 찾을 수 없습니다.');
+    }
+
+    if (group.ownerUserId !== requesterUserId) {
+      throw new ForbiddenException('그룹을 삭제할 권한이 없습니다.');
+    }
+
+    await this.partyGroupRepository.remove(group);
+
+    return {
+      message: '그룹이 삭제되었습니다.',
+      deletedGroup: {
+        id: group.id,
+        name: group.name,
       },
     };
   }
