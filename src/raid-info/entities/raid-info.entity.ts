@@ -17,6 +17,9 @@ export class RaidInfo {
   @Column({ unique: true })
   raidName: string;
 
+  @Column({ type: 'int', default: 4 })
+  partySize: number;
+
   @Column({ nullable: true })
   description: string;
 

@@ -20,6 +20,7 @@ import { CreateWeeklyRaidDto } from './dto/create-weekly-raid.dto';
 import { UpdateClearStatusDto } from 'src/character-weekly-raid/dto/update-clear-status.dto';
 import { UpdateWeeklyRaidGateDto } from 'src/character-weekly-raid/dto/update-weekly-raid-gate.dto';
 import { DeleteWeeklyRaidByRaidDto } from './dto/delete-weekly-raid-by-raid.dto';
+import { UpdateCharacterPartyRoleDto } from './dto/update-character-party-role.dto';
 
 @ApiTags('Characters')
 @ApiBearerAuth()
@@ -195,5 +196,20 @@ export class CharactersController {
   @ApiOperation({ summary: '원정대 탭 전체 조회' })
   getDashboard(@Req() req: any) {
     return this.charactersService.getDashboard(req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':characterId/party-role')
+  @ApiOperation({ summary: '캐릭터 딜러/서포터 역할 수정' })
+  updateCharacterPartyRole(
+    @Req() req: any,
+    @Param('characterId', ParseIntPipe) characterId: number,
+    @Body() dto: UpdateCharacterPartyRoleDto,
+  ) {
+    return this.charactersService.updateCharacterPartyRole(
+      req.user.userId,
+      characterId,
+      dto.partyRole,
+    );
   }
 }

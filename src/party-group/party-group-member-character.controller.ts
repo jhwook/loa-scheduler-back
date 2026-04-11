@@ -59,4 +59,16 @@ export class PartyGroupMemberCharacterController {
       req.user.userId,
     );
   }
+
+  @Get(':groupId/party-builder-characters')
+  @ApiOperation({ summary: '파티 편성용 공격대 공개 캐릭터 목록 조회' })
+  getPartyBuilderCharacters(
+    @Req() req: any,
+    @Param('groupId', ParseIntPipe) groupId: number,
+  ) {
+    return this.partyGroupMemberCharacterService.getPartyBuilderCharacters(
+      groupId,
+      req.user.userId,
+    );
+  }
 }

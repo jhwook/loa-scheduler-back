@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsInt,
@@ -17,6 +17,11 @@ export class CreateRaidInfoDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiPropertyOptional({ example: 8, description: '레이드 인원 수' })
+  @IsOptional()
+  @IsInt()
+  partySize?: number;
 
   @ApiProperty({ example: 1, required: false, default: 0 })
   @IsOptional()

@@ -68,6 +68,7 @@ export class PartyGroupMemberCharacterService {
       characterClassName: character.characterClassName,
       itemAvgLevel: character.itemAvgLevel,
       combatPower: character.combatPower,
+      partyRole: character.partyRole,
       selected: selectedCharacterIdSet.has(character.id),
     }));
   }
@@ -216,6 +217,7 @@ export class PartyGroupMemberCharacterService {
         itemAvgLevel: string | null;
         itemMaxLevel: string | null;
         combatPower: string | null;
+        partyRole: string | null;
         lastSyncedAt: Date | null;
         weeklyRaids: any[];
       }>
@@ -233,6 +235,7 @@ export class PartyGroupMemberCharacterService {
         itemAvgLevel: row.character.itemAvgLevel,
         itemMaxLevel: row.character.itemMaxLevel,
         combatPower: row.character.combatPower,
+        partyRole: row.character.partyRole,
         lastSyncedAt: row.character.lastSyncedAt,
         weeklyRaids: characterWeeklyRaids.map((weeklyRaid) => ({
           id: weeklyRaid.id,
@@ -279,5 +282,42 @@ export class PartyGroupMemberCharacterService {
         characters: visibleCharacterMapByUserId.get(member.userId) ?? [],
       })),
     };
+  }
+
+  async getPartyBuilderCharacters(groupId: number, requesterUserId: number) {
+    const requesterMembership = await this.partyGroupMemberRepository.findOne({
+      where: {
+        groupId,
+        userId: requesterUserId,
+      },
+    });
+
+    if (!requesterMembership) {
+      throw new ForbiddenException('해당 그룹에 접근할 수 없습니다.');
+    }
+
+    const visibleRows = await this.partyGroupMemberCharacterRepository.find({
+      where: { groupId },
+      relations: {
+        character: true,
+        user: true,
+      },
+      order: {
+        createdAt: 'ASC',
+      },
+    });
+
+    return visibleRows.map((row) => ({
+      memberUserId: row.userId,
+      ownerNickname: row.user.nickname,
+      ownerUsername: row.user.username,
+      ownerDisplayName: row.user.nickname ?? row.user.username,
+      characterId: row.character.id,
+      characterName: row.character.characterName,
+      characterClassName: row.character.characterClassName,
+      itemAvgLevel: row.character.itemAvgLevel,
+      combatPower: row.character.combatPower,
+      partyRole: row.character.partyRole, // DEALER | SUPPORT
+    }));
   }
 }

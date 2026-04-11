@@ -13,6 +13,8 @@ import { CharacterWeeklyRaidGate } from '../../character-weekly-raid/entities/ch
 import { RaidPartyMember } from 'src/raid-party/entites/raid-party-member.entity';
 import { PartyGroupMemberCharacter } from 'src/party-group/entities/party-group-member-character.entity';
 
+export type CharacterPartyRole = 'DEALER' | 'SUPPORT';
+
 @Entity('characters')
 export class Character {
   @PrimaryGeneratedColumn()
@@ -65,6 +67,13 @@ export class Character {
 
   @Column({ nullable: true })
   characterImage: string;
+
+  @Column({
+    type: 'varchar',
+    length: 20,
+    default: 'DEALER',
+  })
+  partyRole: CharacterPartyRole;
 
   @Column({ type: 'timestamp', nullable: true })
   lastSyncedAt: Date | null;

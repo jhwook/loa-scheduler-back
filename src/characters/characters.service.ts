@@ -279,6 +279,7 @@ export class CharactersService {
         combatPower: character.combatPower,
         characterImage: character.characterImage,
         lastSyncedAt: character.lastSyncedAt,
+        partyRole: character.partyRole,
         weeklyGoldTotal,
         weeklyBoundGoldTotal,
         weeklyRaids: characterWeeklyRaids.map((weeklyRaid) => ({
@@ -321,6 +322,35 @@ export class CharactersService {
       totalWeeklyGold,
       totalWeeklyBoundGold,
       characters: characterCards,
+    };
+  }
+
+  async updateCharacterPartyRole(
+    userId: number,
+    characterId: number,
+    partyRole: 'DEALER' | 'SUPPORT',
+  ) {
+    const character = await this.charactersRepository.findOne({
+      where: {
+        id: characterId,
+        userId,
+      },
+    });
+
+    if (!character) {
+      throw new NotFoundException('캐릭터를 찾을 수 없습니다.');
+    }
+
+    character.partyRole = partyRole;
+    await this.charactersRepository.save(character);
+
+    return {
+      message: '캐릭터 역할이 수정되었습니다.',
+      character: {
+        id: character.id,
+        characterName: character.characterName,
+        partyRole: character.partyRole,
+      },
     };
   }
 }

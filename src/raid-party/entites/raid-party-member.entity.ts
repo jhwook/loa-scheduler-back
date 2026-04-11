@@ -11,7 +11,7 @@ import {
 import { RaidParty } from './raid-party.entity';
 import { Character } from '../../characters/entities/character.entity';
 
-export type RaidPartyPositionRole = 'DPS' | 'SUPPORT' | 'ETC';
+export type RaidPartyPositionRole = 'DEALER' | 'SUPPORT';
 
 @Entity('raid_party_member')
 @Unique(['raidPartyId', 'characterId'])

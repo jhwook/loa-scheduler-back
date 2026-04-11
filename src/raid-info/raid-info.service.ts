@@ -65,6 +65,7 @@ export class RaidInfoService {
     const raidInfo = this.raidInfoRepository.create({
       raidName: data.raidName,
       description: data.description ?? null,
+      partySize: data.partySize ?? 4,
       orderNo: data.orderNo ?? 0,
       isActive: data.isActive ?? true,
     });
