@@ -302,22 +302,41 @@ export class PartyGroupMemberCharacterService {
         character: true,
         user: true,
       },
-      order: {
-        createdAt: 'ASC',
-      },
     });
 
-    return visibleRows.map((row) => ({
-      memberUserId: row.userId,
-      ownerNickname: row.user.nickname,
-      ownerUsername: row.user.username,
-      ownerDisplayName: row.user.nickname ?? row.user.username,
-      characterId: row.character.id,
-      characterName: row.character.characterName,
-      characterClassName: row.character.characterClassName,
-      itemAvgLevel: row.character.itemAvgLevel,
-      combatPower: row.character.combatPower,
-      partyRole: row.character.partyRole, // DEALER | SUPPORT
-    }));
+    const parseItemLevel = (value: string | null | undefined) => {
+      if (!value) {
+        return 0;
+      }
+
+      const normalized = value.replace(/,/g, '').trim();
+      const parsed = Number(normalized);
+
+      return Number.isNaN(parsed) ? 0 : parsed;
+    };
+
+    return visibleRows
+      .map((row) => ({
+        memberUserId: row.userId,
+        ownerNickname: row.user.nickname,
+        ownerUsername: row.user.username,
+        ownerDisplayName: row.user.nickname ?? row.user.username,
+        characterId: row.character.id,
+        characterName: row.character.characterName,
+        characterClassName: row.character.characterClassName,
+        itemAvgLevel: row.character.itemAvgLevel,
+        combatPower: row.character.combatPower,
+        partyRole: row.character.partyRole,
+      }))
+      .sort((a, b) => {
+        const levelA = parseItemLevel(a.itemAvgLevel);
+        const levelB = parseItemLevel(b.itemAvgLevel);
+
+        if (levelB !== levelA) {
+          return levelB - levelA;
+        }
+
+        return a.characterName.localeCompare(b.characterName, 'ko');
+      });
   }
 }

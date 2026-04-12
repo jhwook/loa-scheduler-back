@@ -9,6 +9,7 @@ import { RaidInfoModule } from './raid-info/raid-info.module';
 import { CharacterWeeklyRaidGateModule } from './character-weekly-raid/character-weekly-raid-gate.module';
 import { PartyGroupModule } from './party-group/party-group.module';
 import { RaidPartyModule } from './raid-party/raid-party.module';
+import { LevelRangeFilterModule } from './level-range-filter/level-range-filter.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { RaidPartyModule } from './raid-party/raid-party.module';
     CharacterWeeklyRaidGateModule,
     PartyGroupModule,
     RaidPartyModule,
+    LevelRangeFilterModule,
   ],
 })
 export class AppModule {}

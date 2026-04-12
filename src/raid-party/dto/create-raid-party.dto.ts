@@ -17,9 +17,4 @@ export class CreateRaidPartyDto {
   @IsString()
   @MaxLength(100)
   title?: string;
-
-  @ApiProperty({ example: 8, description: '파티 인원 수 (4 또는 8)' })
-  @IsInt()
-  @Min(1)
-  partySize: number;
 }

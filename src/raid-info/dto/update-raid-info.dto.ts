@@ -12,6 +12,11 @@ export class UpdateRaidInfoDto {
   @IsString()
   description?: string;
 
+  @ApiPropertyOptional({ example: 8, description: '레이드 인원 수' })
+  @IsOptional()
+  @IsInt()
+  partySize?: number;
+
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
   @IsInt()

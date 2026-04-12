@@ -13,8 +13,6 @@ import { RaidInfo } from '../../raid-info/entities/raid-info.entity';
 import { User } from '../../users/entities/user.entity';
 import { RaidPartyMember } from './raid-party-member.entity';
 
-export type RaidPartyStatus = 'DRAFT' | 'CONFIRMED' | 'COMPLETED';
-
 @Entity('raid_party')
 export class RaidParty {
   @PrimaryGeneratedColumn()
@@ -43,13 +41,6 @@ export class RaidParty {
 
   @Column({ type: 'int', default: 4 })
   partySize: number;
-
-  @Column({
-    type: 'varchar',
-    length: 20,
-    default: 'DRAFT',
-  })
-  status: RaidPartyStatus;
 
   @Column()
   createdByUserId: number;
