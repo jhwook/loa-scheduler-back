@@ -12,7 +12,11 @@ async function bootstrap() {
   app.use(morgan('dev'));
 
   app.enableCors({
-    origin: ['http://localhost:3000'],
+    origin: [
+      'http://localhost:3000',
+      // 나중에 프론트 배포 주소도 여기 추가
+      // 'https://your-frontend-domain.vercel.app',
+    ],
     credentials: true,
   });
 
@@ -34,6 +38,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(process.env.PORT ?? 8080);
+  const port = Number(process.env.PORT) || 8080;
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap();
