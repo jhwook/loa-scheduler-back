@@ -16,6 +16,7 @@ async function bootstrap() {
       'http://localhost:3000',
       // 나중에 프론트 배포 주소도 여기 추가
       // 'https://your-frontend-domain.vercel.app',
+      'https://loa-scheduler.vercel.app',
     ],
     credentials: true,
   });
