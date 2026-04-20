@@ -35,6 +35,9 @@ export class User {
   @Column({ default: false })
   hasApiToken: boolean;
 
+  @Column({ type: 'text', nullable: true })
+  refreshToken: string | null;
+
   @Column({ nullable: true })
   mainCharacterName: string | null;
 

@@ -76,7 +76,7 @@ export class LostarkService {
       const response = await firstValueFrom(
         this.httpService.get('/news/notices', {
           headers: {
-            authorization: `bearer ${apiToken}`,
+            authorization: `bearer ${apiToken.trim()}`,
           },
         }),
       );
@@ -84,7 +84,6 @@ export class LostarkService {
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<any>;
-
       if (axiosError.response) {
         throw new HttpException(
           '유효하지 않은 로스트아크 API 토큰입니다.',

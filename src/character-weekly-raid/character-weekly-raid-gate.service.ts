@@ -287,19 +287,13 @@ export class CharacterWeeklyRaidGateService {
       isExtraRewardSelected: boolean;
     },
   ) {
-    console.log(
-      'upsertWeeklyRaidGate called with characterId:',
-      characterId,
-      'and data:',
-      data,
-    );
     let entity = await this.characterWeeklyRaidGateRepository.findOne({
       where: {
         characterId,
         raidGateInfoId: data.raidGateInfoId,
       },
     });
-    console.log('Existing entity:', entity);
+
     const gateInfo = await this.raidGateInfoRepository.findOne({
       where: { id: data.raidGateInfoId },
     });
@@ -345,6 +339,7 @@ export class CharacterWeeklyRaidGateService {
       isExtraRewardSelected: boolean;
     }>,
   ) {
+    console.log(selections);
     const existing = await this.characterWeeklyRaidGateRepository.find({
       where: { characterId },
     });
@@ -447,5 +442,143 @@ export class CharacterWeeklyRaidGateService {
       deletedCount: toDelete.length,
       deletedRaidInfoId: raidInfoId,
     };
+  }
+
+  async replaceWeeklyRaidGatesByRaid(
+    characterId: number,
+    raidInfoId: number,
+    raidGateSelections: {
+      raidGateInfoId: number;
+      isExtraRewardSelected: boolean;
+    }[],
+  ) {
+    const gateInfos = await this.raidGateInfoRepository.find({
+      where: {
+        raidInfoId,
+      },
+    });
+
+    const gateInfoIds = gateInfos.map((gate) => gate.id);
+
+    if (gateInfoIds.length === 0) {
+      throw new NotFoundException(
+        '해당 레이드의 관문 정보를 찾을 수 없습니다.',
+      );
+    }
+
+    // 이 레이드에 속한 기존 숙제만 삭제
+    await this.characterWeeklyRaidGateRepository.delete({
+      characterId,
+      raidGateInfoId: In(gateInfoIds),
+    });
+
+    if (!raidGateSelections.length) {
+      return this.findByCharacterId(characterId);
+    }
+
+    const newEntities = [];
+
+    for (const selection of raidGateSelections) {
+      const gateInfo = await this.raidGateInfoRepository.findOne({
+        where: { id: selection.raidGateInfoId },
+      });
+
+      if (!gateInfo) {
+        continue;
+      }
+
+      if (gateInfo.raidInfoId !== raidInfoId) {
+        throw new BadRequestException(
+          '다른 레이드의 관문 정보가 포함되어 있습니다.',
+        );
+      }
+
+      newEntities.push(
+        this.characterWeeklyRaidGateRepository.create({
+          characterId,
+          raidGateInfoId: selection.raidGateInfoId,
+          isCleared: false,
+          isGoldEarned: false,
+          isExtraRewardSelected: selection.isExtraRewardSelected,
+          extraRewardCostSnapshot: selection.isExtraRewardSelected
+            ? gateInfo.extraRewardCost
+            : null,
+          clearedAt: null,
+        }),
+      );
+    }
+
+    if (newEntities.length > 0) {
+      await this.characterWeeklyRaidGateRepository.save(newEntities);
+    }
+
+    return this.findByCharacterId(characterId);
+  }
+
+  async updateWeeklyRaidOrders(
+    characterId: number,
+    raidOrders: {
+      raidInfoId: number;
+      orderNo: number;
+    }[],
+  ) {
+    if (!raidOrders.length) {
+      throw new BadRequestException('raidOrders는 비어 있을 수 없습니다.');
+    }
+
+    const existingWeeklyRaids =
+      await this.characterWeeklyRaidGateRepository.find({
+        where: { characterId },
+        relations: {
+          raidGateInfo: true,
+        },
+      });
+
+    if (!existingWeeklyRaids.length) {
+      throw new NotFoundException(
+        '해당 캐릭터의 레이드 숙제를 찾을 수 없습니다.',
+      );
+    }
+
+    // 중복 raidInfoId 방지
+    const raidInfoIdSet = new Set<number>();
+    for (const item of raidOrders) {
+      if (raidInfoIdSet.has(item.raidInfoId)) {
+        throw new BadRequestException(
+          `중복된 raidInfoId가 있습니다. raidInfoId=${item.raidInfoId}`,
+        );
+      }
+      raidInfoIdSet.add(item.raidInfoId);
+    }
+
+    // 기존 캐릭터 숙제에 실제로 존재하는 raidInfoId만 허용
+    const existingRaidInfoIds = new Set(
+      existingWeeklyRaids.map((item) => item.raidGateInfo.raidInfoId),
+    );
+
+    for (const item of raidOrders) {
+      if (!existingRaidInfoIds.has(item.raidInfoId)) {
+        throw new BadRequestException(
+          `해당 캐릭터에 존재하지 않는 레이드입니다. raidInfoId=${item.raidInfoId}`,
+        );
+      }
+    }
+
+    // 같은 raidInfoId에 속한 관문들 전부 같은 orderNo로 변경
+    const updateMap = new Map<number, number>();
+    for (const item of raidOrders) {
+      updateMap.set(item.raidInfoId, item.orderNo);
+    }
+
+    for (const weeklyRaid of existingWeeklyRaids) {
+      const nextOrderNo = updateMap.get(weeklyRaid.raidGateInfo.raidInfoId);
+      if (nextOrderNo !== undefined) {
+        weeklyRaid.orderNo = nextOrderNo;
+      }
+    }
+
+    await this.characterWeeklyRaidGateRepository.save(existingWeeklyRaids);
+
+    return this.findByCharacterId(characterId);
   }
 }

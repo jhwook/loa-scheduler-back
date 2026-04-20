@@ -107,7 +107,7 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('유저를 찾을 수 없습니다.');
     }
-
+    apiKey = apiKey.replace(/\s+/g, '');
     await this.lostarkService.validateApiKey(apiKey);
 
     user.lostarkApiToken = apiKey;

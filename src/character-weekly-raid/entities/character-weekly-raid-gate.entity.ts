@@ -50,6 +50,9 @@ export class CharacterWeeklyRaidGate {
   @Column({ type: 'timestamp', nullable: true })
   clearedAt: Date | null;
 
+  @Column({ type: 'int', default: 0 })
+  orderNo: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

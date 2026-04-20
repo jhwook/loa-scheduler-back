@@ -21,6 +21,7 @@ import { UpdateClearStatusDto } from 'src/character-weekly-raid/dto/update-clear
 import { UpdateWeeklyRaidGateDto } from 'src/character-weekly-raid/dto/update-weekly-raid-gate.dto';
 import { DeleteWeeklyRaidByRaidDto } from './dto/delete-weekly-raid-by-raid.dto';
 import { UpdateCharacterPartyRoleDto } from './dto/update-character-party-role.dto';
+import { UpdateWeeklyRaidOrderDto } from 'src/character-weekly-raid/dto/update-weekly-raid-order.dto';
 
 @ApiTags('Characters')
 @ApiBearerAuth()
@@ -146,6 +147,31 @@ export class CharactersController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Put(':characterId/weekly-raids/raid/:raidInfoId')
+  @ApiOperation({ summary: '캐릭터의 특정 레이드 숙제만 수정' })
+  async replaceWeeklyRaidByRaid(
+    @Req() req: any,
+    @Param('characterId', ParseIntPipe) characterId: number,
+    @Param('raidInfoId', ParseIntPipe) raidInfoId: number,
+    @Body() dto: CreateWeeklyRaidDto,
+  ) {
+    const character = await this.charactersService.findOneByIdAndUserId(
+      characterId,
+      req.user.userId,
+    );
+
+    if (!character) {
+      throw new NotFoundException('캐릭터를 찾을 수 없습니다.');
+    }
+
+    return this.characterWeeklyRaidGateService.replaceWeeklyRaidGatesByRaid(
+      characterId,
+      raidInfoId,
+      dto.raidGateSelections,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Put(':characterId/weekly-raids')
   @ApiOperation({ summary: '캐릭터 레이드 숙제 목록 전체 수정' })
   async replaceWeeklyRaids(
@@ -161,7 +187,7 @@ export class CharactersController {
     if (!character) {
       throw new NotFoundException('캐릭터를 찾을 수 없습니다.');
     }
-
+    console.log(dto);
     return this.characterWeeklyRaidGateService.replaceWeeklyRaidGates(
       characterId,
       dto.raidGateSelections,
@@ -210,6 +236,29 @@ export class CharactersController {
       req.user.userId,
       characterId,
       dto.partyRole,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':characterId/weekly-raids/order')
+  @ApiOperation({ summary: '캐릭터 레이드 숙제 순서 변경' })
+  async updateWeeklyRaidOrders(
+    @Req() req: any,
+    @Param('characterId', ParseIntPipe) characterId: number,
+    @Body() dto: UpdateWeeklyRaidOrderDto,
+  ) {
+    const character = await this.charactersService.findOneByIdAndUserId(
+      characterId,
+      req.user.userId,
+    );
+
+    if (!character) {
+      throw new NotFoundException('캐릭터를 찾을 수 없습니다.');
+    }
+
+    return this.characterWeeklyRaidGateService.updateWeeklyRaidOrders(
+      characterId,
+      dto.raidOrders,
     );
   }
 }
