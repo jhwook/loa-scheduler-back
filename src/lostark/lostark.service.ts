@@ -13,6 +13,7 @@ export class LostarkService {
 
   async getSiblings(characterName: string, apiToken: string) {
     try {
+      apiToken = apiToken.replace(/\s+/g, '');
       const response = await firstValueFrom(
         this.httpService.get(
           `/characters/${encodeURIComponent(characterName)}/siblings`,
@@ -43,6 +44,7 @@ export class LostarkService {
 
   async getCharacterProfile(characterName: string, apiToken: string) {
     try {
+      apiToken = apiToken.replace(/\s+/g, '');
       const response = await firstValueFrom(
         this.httpService.get(
           `/armories/characters/${encodeURIComponent(characterName)}/profiles`,
@@ -73,6 +75,7 @@ export class LostarkService {
 
   async validateApiKey(apiToken: string) {
     try {
+      apiToken = apiToken.replace(/\s+/g, '');
       const response = await firstValueFrom(
         this.httpService.get('/news/notices', {
           headers: {
