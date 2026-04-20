@@ -581,4 +581,16 @@ export class CharacterWeeklyRaidGateService {
 
     return this.findByCharacterId(characterId);
   }
+
+  async resetAllWeeklyRaidGates() {
+    return this.characterWeeklyRaidGateRepository
+      .createQueryBuilder()
+      .update()
+      .set({
+        isCleared: false,
+        isGoldEarned: false,
+        clearedAt: null,
+      })
+      .execute();
+  }
 }

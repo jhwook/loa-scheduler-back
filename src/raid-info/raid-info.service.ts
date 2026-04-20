@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -165,5 +166,64 @@ export class RaidInfoService {
       description: raidInfo.description,
       difficulties: Array.from(difficultyMap.values()),
     };
+  }
+
+  async updateRaidInfoOrders(
+    raidOrders: {
+      raidInfoId: number;
+      orderNo: number;
+    }[],
+  ) {
+    if (!raidOrders.length) {
+      throw new BadRequestException('raidOrders는 비어 있을 수 없습니다.');
+    }
+
+    const raidInfos = await this.raidInfoRepository.find();
+
+    if (!raidInfos.length) {
+      throw new NotFoundException('레이드 정보를 찾을 수 없습니다.');
+    }
+
+    // 중복 raidInfoId 방지
+    const raidInfoIdSet = new Set<number>();
+    for (const item of raidOrders) {
+      if (raidInfoIdSet.has(item.raidInfoId)) {
+        throw new BadRequestException(
+          `중복된 raidInfoId가 있습니다. raidInfoId=${item.raidInfoId}`,
+        );
+      }
+      raidInfoIdSet.add(item.raidInfoId);
+    }
+
+    const existingRaidInfoIds = new Set(raidInfos.map((raid) => raid.id));
+
+    for (const item of raidOrders) {
+      if (!existingRaidInfoIds.has(item.raidInfoId)) {
+        throw new BadRequestException(
+          `존재하지 않는 레이드입니다. raidInfoId=${item.raidInfoId}`,
+        );
+      }
+    }
+
+    const updateMap = new Map<number, number>();
+    for (const item of raidOrders) {
+      updateMap.set(item.raidInfoId, item.orderNo);
+    }
+
+    for (const raidInfo of raidInfos) {
+      const nextOrderNo = updateMap.get(raidInfo.id);
+      if (nextOrderNo !== undefined) {
+        raidInfo.orderNo = nextOrderNo;
+      }
+    }
+
+    await this.raidInfoRepository.save(raidInfos);
+
+    return this.raidInfoRepository.find({
+      order: {
+        orderNo: 'ASC',
+        id: 'ASC',
+      },
+    });
   }
 }

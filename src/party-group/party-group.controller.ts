@@ -16,6 +16,7 @@ import { PartyGroupService } from './party-group.service';
 import { CreatePartyGroupDto } from './dto/create-party-group.dto';
 import { AddPartyGroupMemberDto } from './dto/add-party-group-member.dto';
 import { UpdatePartyGroupMemberNicknameDto } from './dto/update-party-group-member-nickname.dto';
+import { CreatePartyGroupFavoriteDto } from './dto/create-party-group-favorite.dto';
 
 @ApiTags('PartyGroups')
 @ApiBearerAuth()
@@ -103,5 +104,48 @@ export class PartyGroupController {
     @Param('groupId', ParseIntPipe) groupId: number,
   ) {
     return this.partyGroupService.deleteGroup(groupId, req.user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Post(':groupId/favorites')
+  @ApiOperation({ summary: '공격대 멤버 즐겨찾기 추가' })
+  addFavoriteMember(
+    @Req() req: any,
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Body() dto: CreatePartyGroupFavoriteDto,
+  ) {
+    return this.partyGroupService.addFavoriteMember(
+      req.user.userId,
+      groupId,
+      dto.favoriteUserId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Delete(':groupId/favorites/:favoriteUserId')
+  @ApiOperation({ summary: '공격대 멤버 즐겨찾기 해제' })
+  removeFavoriteMember(
+    @Req() req: any,
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Param('favoriteUserId', ParseIntPipe) favoriteUserId: number,
+  ) {
+    return this.partyGroupService.removeFavoriteMember(
+      req.user.userId,
+      groupId,
+      favoriteUserId,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get(':groupId/favorites')
+  @ApiOperation({ summary: '내가 즐겨찾기한 공격대 멤버 목록 조회' })
+  getFavoriteMembers(
+    @Req() req: any,
+    @Param('groupId', ParseIntPipe) groupId: number,
+  ) {
+    return this.partyGroupService.getFavoriteMembers(req.user.userId, groupId);
   }
 }

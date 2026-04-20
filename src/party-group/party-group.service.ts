@@ -11,6 +11,7 @@ import { PartyGroupMember } from './entities/party-group-member.entity';
 import { User } from '../users/entities/user.entity';
 import { Character } from '../characters/entities/character.entity';
 import { CharacterWeeklyRaidGate } from 'src/character-weekly-raid/entities/character-weekly-raid-gate.entity';
+import { PartyGroupMemberFavorite } from './entities/party-group-member-favorite.entity';
 
 @Injectable()
 export class PartyGroupService {
@@ -29,6 +30,9 @@ export class PartyGroupService {
 
     @InjectRepository(CharacterWeeklyRaidGate)
     private readonly characterWeeklyRaidGateRepository: Repository<CharacterWeeklyRaidGate>,
+
+    @InjectRepository(PartyGroupMemberFavorite)
+    private readonly partyGroupMemberFavoriteRepository: Repository<PartyGroupMemberFavorite>,
   ) {}
 
   async createGroup(
@@ -461,5 +465,143 @@ export class PartyGroupService {
         name: group.name,
       },
     };
+  }
+
+  async addFavoriteMember(
+    requesterUserId: number,
+    groupId: number,
+    favoriteUserId: number,
+  ) {
+    if (requesterUserId === favoriteUserId) {
+      throw new BadRequestException('자기 자신은 즐겨찾기할 수 없습니다.');
+    }
+
+    const requesterMembership = await this.partyGroupMemberRepository.findOne({
+      where: {
+        groupId,
+        userId: requesterUserId,
+      },
+    });
+
+    if (!requesterMembership) {
+      throw new ForbiddenException('해당 공격대에 접근할 수 없습니다.');
+    }
+
+    const targetMembership = await this.partyGroupMemberRepository.findOne({
+      where: {
+        groupId,
+        userId: favoriteUserId,
+      },
+    });
+
+    if (!targetMembership) {
+      throw new NotFoundException('해당 유저는 공격대 멤버가 아닙니다.');
+    }
+
+    const existing = await this.partyGroupMemberFavoriteRepository.findOne({
+      where: {
+        groupId,
+        userId: requesterUserId,
+        favoriteUserId,
+      },
+    });
+
+    if (existing) {
+      return {
+        message: '이미 즐겨찾기된 유저입니다.',
+        favoriteUserId,
+        isFavorite: true,
+      };
+    }
+
+    const favorite = this.partyGroupMemberFavoriteRepository.create({
+      groupId,
+      userId: requesterUserId,
+      favoriteUserId,
+    });
+
+    await this.partyGroupMemberFavoriteRepository.save(favorite);
+
+    return {
+      message: '즐겨찾기에 추가되었습니다.',
+      favoriteUserId,
+      isFavorite: true,
+    };
+  }
+
+  async removeFavoriteMember(
+    requesterUserId: number,
+    groupId: number,
+    favoriteUserId: number,
+  ) {
+    const requesterMembership = await this.partyGroupMemberRepository.findOne({
+      where: {
+        groupId,
+        userId: requesterUserId,
+      },
+    });
+
+    if (!requesterMembership) {
+      throw new ForbiddenException('해당 공격대에 접근할 수 없습니다.');
+    }
+
+    const favorite = await this.partyGroupMemberFavoriteRepository.findOne({
+      where: {
+        groupId,
+        userId: requesterUserId,
+        favoriteUserId,
+      },
+    });
+
+    if (!favorite) {
+      return {
+        message: '즐겨찾기 상태가 아닙니다.',
+        favoriteUserId,
+        isFavorite: false,
+      };
+    }
+
+    await this.partyGroupMemberFavoriteRepository.remove(favorite);
+
+    return {
+      message: '즐겨찾기가 해제되었습니다.',
+      favoriteUserId,
+      isFavorite: false,
+    };
+  }
+
+  async getFavoriteMembers(requesterUserId: number, groupId: number) {
+    const requesterMembership = await this.partyGroupMemberRepository.findOne({
+      where: {
+        groupId,
+        userId: requesterUserId,
+      },
+    });
+
+    if (!requesterMembership) {
+      throw new ForbiddenException('해당 공격대에 접근할 수 없습니다.');
+    }
+
+    const favorites = await this.partyGroupMemberFavoriteRepository.find({
+      where: {
+        groupId,
+        userId: requesterUserId,
+      },
+      relations: {
+        favoriteUser: true,
+      },
+      order: {
+        createdAt: 'ASC',
+      },
+    });
+
+    return favorites.map((favorite) => ({
+      favoriteUserId: favorite.favoriteUserId,
+      username: favorite.favoriteUser.username,
+      nickname: favorite.favoriteUser.nickname,
+      displayName:
+        favorite.favoriteUser.nickname ?? favorite.favoriteUser.username,
+      createdAt: favorite.createdAt,
+    }));
   }
 }

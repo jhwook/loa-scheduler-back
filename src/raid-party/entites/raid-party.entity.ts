@@ -54,6 +54,9 @@ export class RaidParty {
   @OneToMany(() => RaidPartyMember, (member) => member.raidParty)
   members: RaidPartyMember[];
 
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  selectedDifficulty: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

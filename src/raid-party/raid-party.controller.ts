@@ -16,6 +16,7 @@ import { RaidPartyService } from './raid-party.service';
 import { CreateRaidPartyDto } from './dto/create-raid-party.dto';
 import { AddRaidPartyMemberDto } from './dto/add-raid-party-member.dto';
 import { UpdateRaidPartyMemberPositionDto } from './dto/update-raid-party-member-position.dto';
+import { UpdateRaidPartyDto } from './dto/update-raid-party.dto';
 
 @ApiTags('RaidParties')
 @ApiBearerAuth()
@@ -104,6 +105,34 @@ export class RaidPartyController {
       raidPartyId,
       memberId,
       dto,
+    );
+  }
+
+  @Patch(':raidPartyId')
+  @ApiOperation({ summary: '공격대 파티 정보 수정' })
+  updateRaidParty(
+    @Req() req: any,
+    @Param('raidPartyId', ParseIntPipe) raidPartyId: number,
+    @Body() dto: UpdateRaidPartyDto,
+  ) {
+    return this.raidPartyService.updateRaidParty(
+      req.user.userId,
+      raidPartyId,
+      dto,
+    );
+  }
+
+  @Get('group/:groupId/raid-info/:raidInfoId/difficulties')
+  @ApiOperation({ summary: '레이드 파티 생성/수정용 난이도 목록 조회' })
+  findAvailableDifficulties(
+    @Req() req: any,
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Param('raidInfoId', ParseIntPipe) raidInfoId: number,
+  ) {
+    return this.raidPartyService.findAvailableDifficulties(
+      req.user.userId,
+      groupId,
+      raidInfoId,
     );
   }
 }

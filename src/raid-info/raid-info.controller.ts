@@ -19,6 +19,7 @@ import { CreateRaidInfoDto } from './dto/create-raid-info.dto';
 import { CreateRaidGateInfoDto } from './dto/create-raid-gate-info.dto';
 import { UpdateRaidGateInfoDto } from './dto/update-raid-gate-info.dto';
 import { UpdateRaidInfoDto } from './dto/update-raid-info.dto';
+import { UpdateRaidInfoOrderDto } from './dto/update-raid-info-order.dto';
 
 @ApiTags('RaidInfo')
 @ApiBearerAuth()
@@ -115,5 +116,11 @@ export class RaidInfoController {
   @ApiOperation({ summary: '특정 레이드 상세 조회' })
   findOne(@Param('raidId', ParseIntPipe) raidId: number) {
     return this.raidInfoService.getRaidDetailForSelection(raidId);
+  }
+
+  @Patch('admin/order')
+  @ApiOperation({ summary: '관리자 레이드 순서 변경' })
+  updateRaidInfoOrders(@Body() dto: UpdateRaidInfoOrderDto) {
+    return this.raidInfoService.updateRaidInfoOrders(dto.raidOrders);
   }
 }

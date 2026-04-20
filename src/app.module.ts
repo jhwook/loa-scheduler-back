@@ -10,10 +10,12 @@ import { CharacterWeeklyRaidGateModule } from './character-weekly-raid/character
 import { PartyGroupModule } from './party-group/party-group.module';
 import { RaidPartyModule } from './raid-party/raid-party.module';
 import { LevelRangeFilterModule } from './level-range-filter/level-range-filter.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
@@ -53,6 +55,7 @@ import { LevelRangeFilterModule } from './level-range-filter/level-range-filter.
     PartyGroupModule,
     RaidPartyModule,
     LevelRangeFilterModule,
+    ScheduleModule,
   ],
 })
 export class AppModule {}

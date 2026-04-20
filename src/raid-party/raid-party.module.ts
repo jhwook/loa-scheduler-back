@@ -9,6 +9,7 @@ import { RaidInfo } from '../raid-info/entities/raid-info.entity';
 import { Character } from '../characters/entities/character.entity';
 import { RaidPartyMember } from './entites/raid-party-member.entity';
 import { RaidParty } from './entites/raid-party.entity';
+import { RaidGateInfo } from 'src/raid-info/entities/raid-gate-info.entity';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { RaidParty } from './entites/raid-party.entity';
       PartyGroupMemberCharacter,
       RaidInfo,
       Character,
+      RaidGateInfo,
     ]),
   ],
   controllers: [RaidPartyController],

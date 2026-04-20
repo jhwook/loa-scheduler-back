@@ -13,6 +13,7 @@ import { Character } from '../characters/entities/character.entity';
 import { PartyGroupMemberCharacter } from '../party-group/entities/party-group-member-character.entity';
 import { RaidPartyMember } from './entites/raid-party-member.entity';
 import { RaidParty } from './entites/raid-party.entity';
+import { RaidGateInfo } from 'src/raid-info/entities/raid-gate-info.entity';
 
 @Injectable()
 export class RaidPartyService {
@@ -37,6 +38,9 @@ export class RaidPartyService {
 
     @InjectRepository(PartyGroupMemberCharacter)
     private readonly partyGroupMemberCharacterRepository: Repository<PartyGroupMemberCharacter>,
+
+    @InjectRepository(RaidGateInfo)
+    private readonly raidGateInfoRepository: Repository<RaidGateInfo>,
   ) {}
 
   async createRaidParty(
@@ -45,6 +49,7 @@ export class RaidPartyService {
       groupId: number;
       raidInfoId: number;
       title?: string;
+      selectedDifficulty?: string;
     },
   ) {
     const membership = await this.partyGroupMemberRepository.findOne({
@@ -74,11 +79,32 @@ export class RaidPartyService {
       throw new NotFoundException('레이드 정보를 찾을 수 없습니다.');
     }
 
+    if (![4, 8].includes(raidInfo.partySize)) {
+      throw new BadRequestException('레이드의 partySize가 올바르지 않습니다.');
+    }
+
+    // 난이도 유효성 체크: 해당 레이드에 실제 존재하는 난이도인지 확인
+    if (data.selectedDifficulty) {
+      const difficultyExists = await this.raidGateInfoRepository.findOne({
+        where: {
+          raidInfoId: data.raidInfoId,
+          difficulty: data.selectedDifficulty,
+        },
+      });
+
+      if (!difficultyExists) {
+        throw new BadRequestException(
+          '해당 레이드에 존재하지 않는 난이도입니다.',
+        );
+      }
+    }
+
     const raidParty = this.raidPartyRepository.create({
       groupId: data.groupId,
       raidInfoId: data.raidInfoId,
       title: data.title ?? null,
       partySize: raidInfo.partySize,
+      selectedDifficulty: data.selectedDifficulty ?? null,
       createdByUserId: requesterUserId,
     });
 
@@ -92,6 +118,67 @@ export class RaidPartyService {
         createdByUser: true,
       },
     });
+  }
+
+  async updateRaidParty(
+    requesterUserId: number,
+    raidPartyId: number,
+    data: {
+      title?: string;
+      selectedDifficulty?: string | null;
+    },
+  ) {
+    const raidParty = await this.raidPartyRepository.findOne({
+      where: { id: raidPartyId },
+      relations: {
+        raidInfo: true,
+      },
+    });
+
+    if (!raidParty) {
+      throw new NotFoundException('공격대 파티를 찾을 수 없습니다.');
+    }
+
+    const membership = await this.partyGroupMemberRepository.findOne({
+      where: {
+        groupId: raidParty.groupId,
+        userId: requesterUserId,
+      },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException('해당 공격대에 접근할 수 없습니다.');
+    }
+
+    if (
+      data.selectedDifficulty !== undefined &&
+      data.selectedDifficulty !== null
+    ) {
+      const difficultyExists = await this.raidGateInfoRepository.findOne({
+        where: {
+          raidInfoId: raidParty.raidInfoId,
+          difficulty: data.selectedDifficulty,
+        },
+      });
+
+      if (!difficultyExists) {
+        throw new BadRequestException(
+          '해당 레이드에 존재하지 않는 난이도입니다.',
+        );
+      }
+    }
+
+    if (data.title !== undefined) {
+      raidParty.title = data.title;
+    }
+
+    if (data.selectedDifficulty !== undefined) {
+      raidParty.selectedDifficulty = data.selectedDifficulty;
+    }
+
+    await this.raidPartyRepository.save(raidParty);
+
+    return this.findRaidPartyDetail(requesterUserId, raidPartyId);
   }
 
   async addCharacterToRaidParty(
@@ -225,19 +312,16 @@ export class RaidPartyService {
       throw new ForbiddenException('해당 공격대에 접근할 수 없습니다.');
     }
 
-    const raidParties = await this.raidPartyRepository.find({
-      where: { groupId },
-      relations: {
-        raidInfo: true,
-        createdByUser: true,
-        members: {
-          character: true,
-        },
-      },
-      order: {
-        createdAt: 'ASC',
-      },
-    });
+    const raidParties = await this.raidPartyRepository
+      .createQueryBuilder('raidParty')
+      .leftJoinAndSelect('raidParty.raidInfo', 'raidInfo')
+      .leftJoinAndSelect('raidParty.createdByUser', 'createdByUser')
+      .leftJoinAndSelect('raidParty.members', 'members')
+      .where('raidParty.groupId = :groupId', { groupId })
+      .orderBy('raidInfo.orderNo', 'ASC') // 레이드 순서
+      .addOrderBy('raidParty.selectedDifficulty', 'DESC') // 필요 없으면 제거 가능
+      .addOrderBy('raidParty.id', 'ASC') // 같은 레이드 안에서는 생성순
+      .getMany();
 
     return raidParties.map((raidParty) => ({
       id: raidParty.id,
@@ -245,6 +329,7 @@ export class RaidPartyService {
       raidInfoId: raidParty.raidInfoId,
       title: raidParty.title,
       partySize: raidParty.partySize,
+      selectedDifficulty: raidParty.selectedDifficulty,
       createdByUserId: raidParty.createdByUserId,
       createdByUser: {
         id: raidParty.createdByUser.id,
@@ -257,6 +342,7 @@ export class RaidPartyService {
         id: raidParty.raidInfo.id,
         raidName: raidParty.raidInfo.raidName,
         partySize: raidParty.raidInfo.partySize,
+        orderNo: raidParty.raidInfo.orderNo,
       },
       memberCount: raidParty.members.length,
       createdAt: raidParty.createdAt,
@@ -306,6 +392,7 @@ export class RaidPartyService {
       groupId: raidParty.groupId,
       title: raidParty.title,
       partySize: raidParty.partySize,
+      selectedDifficulty: raidParty.selectedDifficulty,
       createdByUserId: raidParty.createdByUserId,
       createdByUser: {
         id: raidParty.createdByUser.id,
@@ -542,5 +629,40 @@ export class RaidPartyService {
         raidName: raidParty.raidInfo?.raidName ?? null,
       },
     };
+  }
+
+  async findAvailableDifficulties(
+    requesterUserId: number,
+    groupId: number,
+    raidInfoId: number,
+  ) {
+    const membership = await this.partyGroupMemberRepository.findOne({
+      where: {
+        groupId,
+        userId: requesterUserId,
+      },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException('해당 공격대에 접근할 수 없습니다.');
+    }
+
+    const gateInfos = await this.raidGateInfoRepository.find({
+      where: {
+        raidInfoId,
+      },
+      order: {
+        orderNo: 'ASC',
+      },
+    });
+
+    const uniqueDifficulties = [
+      ...new Set(gateInfos.map((gate) => gate.difficulty)),
+    ].filter(Boolean);
+
+    return uniqueDifficulties.map((difficulty) => ({
+      label: difficulty,
+      value: difficulty,
+    }));
   }
 }

@@ -17,4 +17,13 @@ export class CreateRaidPartyDto {
   @IsString()
   @MaxLength(100)
   title?: string;
+
+  @ApiPropertyOptional({
+    example: '3단계',
+    description: '선택한 레이드 난이도',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  selectedDifficulty?: string;
 }

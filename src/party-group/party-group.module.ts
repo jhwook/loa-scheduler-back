@@ -13,6 +13,7 @@ import { CharacterWeeklyRaidGate } from 'src/character-weekly-raid/entities/char
 import { PartyGroupMemberCharacter } from './entities/party-group-member-character.entity';
 import { PartyGroupMemberCharacterController } from './party-group-member-character.controller';
 import { PartyGroupMemberCharacterService } from './party-group-member-character.service';
+import { PartyGroupMemberFavorite } from './entities/party-group-member-favorite.entity';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PartyGroupMemberCharacterService } from './party-group-member-character
       Character,
       CharacterWeeklyRaidGate,
       PartyGroupMemberCharacter,
+      PartyGroupMemberFavorite,
     ]),
   ],
   controllers: [
