@@ -75,7 +75,11 @@ export class CharacterWeeklyRaidGateService {
         },
       },
       order: {
-        createdAt: 'ASC',
+        // 레이드 숙제 순서
+        orderNo: 'ASC',
+        raidGateInfo: {
+          orderNo: 'ASC',
+        },
       },
     });
   }
@@ -135,6 +139,8 @@ export class CharacterWeeklyRaidGateService {
       return existing;
     }
 
+    const orderNo = await this.getNextWeeklyRaidOrderNo(characterId);
+
     const gateInfo = await this.raidGateInfoRepository.findOne({
       where: { id: raidGateInfoId },
       relations: {
@@ -160,6 +166,7 @@ export class CharacterWeeklyRaidGateService {
         ? gateInfo.extraRewardCost
         : null,
       clearedAt: null,
+      orderNo,
     });
 
     return this.characterWeeklyRaidGateRepository.save(entity);
@@ -339,14 +346,32 @@ export class CharacterWeeklyRaidGateService {
       isExtraRewardSelected: boolean;
     }>,
   ) {
-    console.log(selections);
     const existing = await this.characterWeeklyRaidGateRepository.find({
       where: { characterId },
+      relations: {
+        raidGateInfo: true,
+      },
     });
 
     const existingMap = new Map(
       existing.map((item) => [item.raidGateInfoId, item]),
     );
+
+    // 기존 레이드별 orderNo 저장
+    const existingRaidOrderMap = new Map<number, number>();
+
+    for (const item of existing) {
+      const raidInfoId = item.raidGateInfo.raidInfoId;
+
+      if (!existingRaidOrderMap.has(raidInfoId)) {
+        existingRaidOrderMap.set(raidInfoId, item.orderNo);
+      }
+    }
+
+    let nextOrderNo =
+      existing.length > 0
+        ? Math.max(...existing.map((item) => item.orderNo ?? 0)) + 1
+        : 1;
 
     const incomingIds = selections.map((item) => item.raidGateInfoId);
 
@@ -370,6 +395,15 @@ export class CharacterWeeklyRaidGateService {
         throw new BadRequestException('더보기가 불가능한 관문입니다.');
       }
 
+      let orderNo = existingRaidOrderMap.get(gateInfo.raidInfoId);
+
+      // 새로 추가되는 레이드면 새 orderNo 부여
+      if (orderNo === undefined) {
+        orderNo = nextOrderNo;
+        existingRaidOrderMap.set(gateInfo.raidInfoId, orderNo);
+        nextOrderNo += 1;
+      }
+
       const existingEntity = existingMap.get(selection.raidGateInfoId);
 
       if (existingEntity) {
@@ -377,6 +411,9 @@ export class CharacterWeeklyRaidGateService {
         existingEntity.extraRewardCostSnapshot = selection.isExtraRewardSelected
           ? gateInfo.extraRewardCost
           : null;
+
+        // 기존 row도 혹시 0/null이면 보정
+        existingEntity.orderNo = orderNo;
 
         entitiesToSave.push(existingEntity);
       } else {
@@ -390,6 +427,9 @@ export class CharacterWeeklyRaidGateService {
             ? gateInfo.extraRewardCost
             : null,
           clearedAt: null,
+
+          // 핵심
+          orderNo,
         });
 
         entitiesToSave.push(newEntity);
@@ -522,6 +562,9 @@ export class CharacterWeeklyRaidGateService {
       orderNo: number;
     }[],
   ) {
+    console.log('순서 변경 요청 characterId:', characterId);
+
+    console.log('순서 변경 body:', raidOrders);
     if (!raidOrders.length) {
       throw new BadRequestException('raidOrders는 비어 있을 수 없습니다.');
     }
@@ -592,5 +635,16 @@ export class CharacterWeeklyRaidGateService {
         clearedAt: null,
       })
       .execute();
+  }
+
+  private async getNextWeeklyRaidOrderNo(characterId: number) {
+    const latest = await this.characterWeeklyRaidGateRepository.findOne({
+      where: { characterId },
+      order: {
+        orderNo: 'DESC',
+      },
+    });
+
+    return latest ? latest.orderNo + 1 : 1;
   }
 }

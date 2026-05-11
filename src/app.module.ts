@@ -11,6 +11,7 @@ import { PartyGroupModule } from './party-group/party-group.module';
 import { RaidPartyModule } from './raid-party/raid-party.module';
 import { LevelRangeFilterModule } from './level-range-filter/level-range-filter.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { SchedulerModule } from './scheduler/scheduler.module';
 
 @Module({
   imports: [
@@ -55,7 +56,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     PartyGroupModule,
     RaidPartyModule,
     LevelRangeFilterModule,
-    ScheduleModule,
+    SchedulerModule,
   ],
 })
 export class AppModule {}
